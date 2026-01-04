@@ -53,7 +53,26 @@ router.get("/network", authOptional, async (c) => {
 
   if (!viewer) return c.json(jsonOk({ ok: true, items: [] }), 200);
 
+  const window = (c.req.query("window") || "week").toLowerCase();
+  const sort = (c.req.query("sort") || "time").toLowerCase(); // time, stars, spicy
+
+  const dt = windowToSql(window);
   const base = recipeSelect(viewer);
+
+  // Determine ORDER BY based on sort
+  let orderBy: string;
+  let extraWhere = "";
+  if (sort === "spicy") {
+    // Trending: most stars in past 24 hours (approximate via recent + stars)
+    orderBy = "ORDER BY r.stars_count DESC, r.created_at DESC";
+    extraWhere = `AND r.created_at >= datetime('now','-1 day')`;
+  } else if (sort === "stars") {
+    orderBy = "ORDER BY r.stars_count DESC, r.created_at DESC";
+  } else {
+    // time (chronological)
+    orderBy = "ORDER BY r.created_at DESC";
+  }
+
   const items = await all<any>(
     c.env,
     `${base.sql}
@@ -66,7 +85,9 @@ router.get("/network", authOptional, async (c) => {
        OR (r.visibility = 'private' AND EXISTS(
             SELECT 1 FROM recipe_shares rs WHERE rs.recipe_id = r.id AND rs.shared_with_user_id = ?
          ))
-     ORDER BY r.created_at DESC
+     AND r.created_at >= ${dt}
+     ${extraWhere}
+     ${orderBy}
      LIMIT 50`,
     [...base.params, viewer, viewer, viewer]
   );
@@ -77,6 +98,7 @@ router.get("/network", authOptional, async (c) => {
 router.get("/popular", authOptional, async (c) => {
   const viewer = c.get("user")?.id ?? null;
   const window = (c.req.query("window") || "week").toLowerCase();
+  const sort = (c.req.query("sort") || "stars").toLowerCase(); // stars, time, spicy
 
   const dt = windowToSql(window);
   const base = recipeSelect(viewer);
@@ -98,6 +120,20 @@ router.get("/popular", authOptional, async (c) => {
     `
     : `(r.visibility = 'public')`;
 
+  // Determine ORDER BY based on sort
+  let orderBy: string;
+  let extraWhere = "";
+  if (sort === "spicy") {
+    // Trending: most stars in past 24 hours
+    orderBy = "ORDER BY r.stars_count DESC, r.created_at DESC";
+    extraWhere = `AND r.created_at >= datetime('now','-1 day')`;
+  } else if (sort === "time") {
+    orderBy = "ORDER BY r.created_at DESC";
+  } else {
+    // stars (default)
+    orderBy = "ORDER BY r.stars_count DESC, r.created_at DESC";
+  }
+
   const visibilityParams = viewer ? [viewer, viewer, viewer] : [];
 
   const items = await all<any>(
@@ -105,7 +141,8 @@ router.get("/popular", authOptional, async (c) => {
     `${base.sql}
      WHERE ${visibilityWhere}
        AND r.created_at >= ${dt}
-     ORDER BY r.stars_count DESC, r.created_at DESC
+       ${extraWhere}
+     ${orderBy}
      LIMIT 50`,
     [...base.params, ...visibilityParams]
   );

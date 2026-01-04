@@ -7,22 +7,37 @@ import { useAuth } from "../lib/auth";
 import { Button } from "../components/Button";
 import { Skeleton } from "../components/Skeleton";
 import { Link } from "react-router-dom";
-import { Image, Users, Flame, Camera } from "lucide-react";
+import { Users, Flame, Camera, Star, Clock, Zap, ChevronDown } from "lucide-react";
 import { NinjaStar } from "../components/NinjaStar";
 
 type FeedResp = { ok: true; items: RecipeSummary[] };
+type SortMode = "stars" | "time" | "spicy";
+
+const sortConfig: Record<SortMode, { icon: typeof Star; label: string; description: string }> = {
+  stars: { icon: Star, label: "Stars", description: "Most starred" },
+  time: { icon: Clock, label: "Recent", description: "Chronological" },
+  spicy: { icon: Zap, label: "Spicy", description: "Trending (24h)" }
+};
 
 export default function Gallery() {
   const { user, csrfToken } = useAuth();
   const qc = useQueryClient();
   const [tab, setTab] = React.useState<"network" | "popular">("popular");
   const [window, setWindow] = React.useState<"day" | "week" | "month" | "all">("week");
+  const [sort, setSort] = React.useState<SortMode>("stars");
+  const [sortOpen, setSortOpen] = React.useState(false);
+
+  // Update default sort when switching tabs
+  React.useEffect(() => {
+    setSort(tab === "popular" ? "stars" : "time");
+  }, [tab]);
 
   const q = useQuery({
-    queryKey: ["gallery", tab, window, !!user],
+    queryKey: ["gallery", tab, window, sort, !!user],
     queryFn: async () => {
-      if (tab === "network") return api<FeedResp>("/feed/network", { method: "GET" });
-      return api<FeedResp>(`/feed/popular?window=${window}`, { method: "GET" });
+      const params = new URLSearchParams({ window, sort });
+      if (tab === "network") return api<FeedResp>(`/feed/network?${params}`, { method: "GET" });
+      return api<FeedResp>(`/feed/popular?${params}`, { method: "GET" });
     },
     select: (data) => ({
       ...data,
@@ -41,6 +56,8 @@ export default function Gallery() {
     month: "This month",
     all: "All time"
   };
+
+  const SortIcon = sortConfig[sort].icon;
 
   return (
     <div className="grid gap-6">
@@ -92,7 +109,47 @@ export default function Gallery() {
           )}
         </div>
 
-        {tab === "popular" && (
+        <div className="flex items-center gap-3">
+          {/* Sort dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setSortOpen(!sortOpen)}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:border-slate-600 hover:bg-slate-800"
+            >
+              <SortIcon className="h-4 w-4 text-slate-400" />
+              {sortConfig[sort].label}
+              <ChevronDown className={`h-4 w-4 text-slate-500 transition ${sortOpen ? "rotate-180" : ""}`} />
+            </button>
+            {sortOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
+                <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-slate-700 bg-slate-900 py-1 shadow-xl">
+                  {(Object.keys(sortConfig) as SortMode[]).map((s) => {
+                    const { icon: Icon, label, description } = sortConfig[s];
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => { setSort(s); setSortOpen(false); }}
+                        className={`flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition ${
+                          sort === s
+                            ? "bg-violet-600/20 text-violet-300"
+                            : "text-slate-300 hover:bg-slate-800"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <div>
+                          <div className="font-medium">{label}</div>
+                          <div className="text-xs text-slate-500">{description}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Time window filter */}
           <div className="flex items-center gap-1 rounded-lg bg-slate-900/50 p-1">
             {(["day", "week", "month", "all"] as const).map((w) => (
               <button
@@ -108,7 +165,7 @@ export default function Gallery() {
               </button>
             ))}
           </div>
-        )}
+        </div>
       </Card>
 
       {/* Loading state */}
