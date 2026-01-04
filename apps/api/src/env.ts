@@ -8,7 +8,8 @@ export type Env = {
   UPLOADS: R2Bucket;
   SESSION_SIGNING_SECRET: string;
   TURNSTILE_SECRET_KEY: string;
-  OPENAI_API_KEY: string;
+  //OPENAI_API_KEY: string;
+  GEMINI_API_KEY: string;
 };
 
 export const isProd = (env: Env) => env.ENV === "prod";

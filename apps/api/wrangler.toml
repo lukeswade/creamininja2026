@@ -6,18 +6,17 @@ compatibility_date = "2025-12-15"
 [[d1_databases]]
 binding = "DB"
 database_name = "creamininja-db"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "a0d1477e-bf3f-472c-b65c-8d7583a19419"
 
 [[r2_buckets]]
 binding = "UPLOADS"
 bucket_name = "creamininja-uploads"
 
 [vars]
-ENV = "dev"
-APP_ORIGIN = "http://localhost:5173"
-COOKIE_DOMAIN = "localhost"
-TURNSTILE_SITE_KEY = "REPLACE_WITH_SITE_KEY"
-TURNSTILE_BYPASS = "true" # set false in prod
+ENV = "prod"
+APP_ORIGIN = "https://creamininja.com"
+COOKIE_DOMAIN = "creamininja.com"
+TURNSTILE_BYPASS = false
 
 # Secrets to set via wrangler secret put:
 # - SESSION_SIGNING_SECRET
