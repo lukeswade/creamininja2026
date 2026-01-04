@@ -40,7 +40,7 @@ export async function geminiGenerateJSON<T>(args: GeminiGenerateArgs): Promise<T
     generationConfig: {
       temperature: 0.8,
       topP: 0.95,
-      maxOutputTokens: 900,
+      maxOutputTokens: 2048,
     },
   };
 
@@ -67,5 +67,10 @@ export async function geminiGenerateJSON<T>(args: GeminiGenerateArgs): Promise<T
       .join("") ?? "";
 
   const cleaned = stripJsonFence(text);
-  return JSON.parse(cleaned) as T;
+  
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch (e) {
+    throw new Error(`Invalid JSON from AI: ${cleaned.slice(0, 200)}...`);
+  }
 }

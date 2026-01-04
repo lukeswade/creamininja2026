@@ -4,7 +4,7 @@ import { Button } from "./Button";
 import { useAuth } from "../lib/auth";
 import { api } from "../lib/api";
 import { Avatar } from "./Avatar";
-import { Home, Users, PlusCircle, LogOut, Menu, X } from "lucide-react";
+import { Home, Users, PlusCircle, LogOut, Menu, X, Image } from "lucide-react";
 
 export function TopNav() {
   const { user, csrfToken, setAuth } = useAuth();
@@ -51,11 +51,15 @@ export function TopNav() {
             <Home className="h-4 w-4" />
             Feed
           </NavLink>
+          <NavLink to="/gallery" className={({ isActive }) => linkClass(isActive)}>
+            <Image className="h-4 w-4" />
+            Gallery
+          </NavLink>
           {user && (
             <>
               <NavLink to="/friends" className={({ isActive }) => linkClass(isActive)}>
                 <Users className="h-4 w-4" />
-                Ninjagos
+                Dojo
               </NavLink>
               <NavLink to="/create" className={({ isActive }) => linkClass(isActive)}>
                 <PlusCircle className="h-4 w-4" />
@@ -120,6 +124,14 @@ export function TopNav() {
               <Home className="h-5 w-5" />
               Feed
             </NavLink>
+            <NavLink
+              to="/gallery"
+              onClick={() => setMobileOpen(false)}
+              className={({ isActive }) => mobileLinkClass(isActive)}
+            >
+              <Image className="h-5 w-5" />
+              Gallery
+            </NavLink>
             {user && (
               <>
                 <NavLink
@@ -128,7 +140,7 @@ export function TopNav() {
                   className={({ isActive }) => mobileLinkClass(isActive)}
                 >
                   <Users className="h-5 w-5" />
-                  Ninjagos
+                  Dojo
                 </NavLink>
                 <NavLink
                   to="/create"

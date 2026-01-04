@@ -3,8 +3,11 @@ import { Link } from "react-router-dom";
 import { Card } from "../components/Card";
 import { NinjaStar } from "../components/NinjaStar";
 import { Sparkles, Users, Lock, Zap } from "lucide-react";
+import { useAuth } from "../lib/auth";
 
 export default function Landing() {
+  const { user } = useAuth();
+
   return (
     <div className="grid gap-8">
       {/* Hero Section */}
@@ -35,12 +38,21 @@ export default function Landing() {
               <Zap className="h-4 w-4" />
               Explore recipes
             </Link>
-            <Link 
-              to="/register" 
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/50 px-6 py-3 font-medium text-slate-100 backdrop-blur transition hover:border-slate-600 hover:bg-slate-800/50"
-            >
-              Create free account
-            </Link>
+            {user ? (
+              <Link 
+                to="/create" 
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/50 px-6 py-3 font-medium text-slate-100 backdrop-blur transition hover:border-slate-600 hover:bg-slate-800/50"
+              >
+                Add recipe
+              </Link>
+            ) : (
+              <Link 
+                to="/register" 
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/50 px-6 py-3 font-medium text-slate-100 backdrop-blur transition hover:border-slate-600 hover:bg-slate-800/50"
+              >
+                Create free account
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -66,9 +78,9 @@ export default function Landing() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-fuchsia-500/20 text-fuchsia-400">
               <Users className="h-5 w-5" />
             </div>
-            <div className="mt-4 text-base font-semibold text-slate-100">Ninjagos</div>
+            <div className="mt-4 text-base font-semibold text-slate-100">The Dojo</div>
             <p className="mt-2 text-sm text-slate-400">
-              Connect with fellow CREAMi lovers. Share recipes directly with your inner circle.
+              Build your ninja network. Share secret recipes with your trusted inner circle.
             </p>
           </div>
         </Card>
@@ -92,9 +104,9 @@ export default function Landing() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
               <NinjaStar className="h-5 w-5" />
             </div>
-            <div className="mt-4 text-base font-semibold text-slate-100">Star favorites</div>
+            <div className="mt-4 text-base font-semibold text-slate-100">Throw stars</div>
             <p className="mt-2 text-sm text-slate-400">
-              Save recipes you love and see what's trending in the community.
+              Like a recipe? Throw it a star! 🥷 Watch the best creations rise to the top.
             </p>
           </div>
         </Card>
@@ -103,16 +115,34 @@ export default function Landing() {
       {/* CTA Section */}
       <Card className="bg-gradient-to-r from-violet-950/50 to-fuchsia-950/50 border-violet-800/50 text-center">
         <div className="py-4">
-          <h2 className="text-2xl font-bold text-slate-100">Ready to start creating?</h2>
-          <p className="mt-2 text-slate-400">Join thousands of CREAMi enthusiasts sharing their frozen creations.</p>
-          <div className="mt-6 flex justify-center gap-4">
-            <Link 
-              to="/register" 
-              className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 font-medium text-slate-950 transition hover:bg-slate-100"
-            >
-              Get started free
-            </Link>
-          </div>
+          {user ? (
+            <>
+              <h2 className="text-2xl font-bold text-slate-100">Get started?</h2>
+              <p className="mt-2 text-slate-400">Enter the Ninjaverse</p>
+              <div className="mt-6 flex justify-center gap-4">
+                <Link 
+                  to="/create" 
+                  className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 font-medium text-slate-950 transition hover:bg-slate-100"
+                >
+                  <NinjaStar className="h-4 w-4" />
+                  Ninjafy
+                </Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="text-2xl font-bold text-slate-100">Ready to start creating?</h2>
+              <p className="mt-2 text-slate-400">Join thousands of CREAMi enthusiasts sharing their frozen creations.</p>
+              <div className="mt-6 flex justify-center gap-4">
+                <Link 
+                  to="/register" 
+                  className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 font-medium text-slate-950 transition hover:bg-slate-100"
+                >
+                  Get started free
+                </Link>
+              </div>
+            </>
+          )}
         </div>
       </Card>
     </div>

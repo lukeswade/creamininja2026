@@ -7,7 +7,13 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png"],
+      includeAssets: [
+        "icons/icon-192.png",
+        "icons/icon-512.png",
+        "icons/maskable-512.png",
+        "icons/apple-touch-icon.png",
+        "icons/apple-touch-icon-180.png"
+      ],
       manifest: {
         name: "CreamiNinja",
         short_name: "CreamiNinja",
@@ -17,10 +23,14 @@ export default defineConfig({
         display: "standalone",
         scope: "/",
         start_url: "/",
+        orientation: "portrait",
+        categories: ["food", "lifestyle", "social"],
         icons: [
           { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
           { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
-          { src: "/icons/maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" }
+          { src: "/icons/maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+          { src: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+          { src: "/icons/apple-touch-icon-180.png", sizes: "180x180", type: "image/png", purpose: "any" }
         ]
       }
     })

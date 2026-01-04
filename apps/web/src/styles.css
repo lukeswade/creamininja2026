@@ -5,3 +5,27 @@
 :root {
   color-scheme: dark;
 }
+
+/* Ninja star throwing animation */
+@keyframes throw {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.4) rotate(180deg) translateY(-8px);
+  }
+  100% {
+    transform: scale(1) rotate(360deg);
+  }
+}
+
+@keyframes fadeUp {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-12px);
+  }
+}

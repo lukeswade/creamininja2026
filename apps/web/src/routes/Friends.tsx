@@ -54,9 +54,9 @@ export default function Friends() {
     <div className="grid gap-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-100">Your Ninjagos</h1>
+        <h1 className="text-2xl font-bold text-slate-100">The Dojo</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Connect with fellow recipe creators
+          Your ninja network — connect with fellow CREAMi masters
         </p>
       </div>
 
@@ -136,12 +136,12 @@ export default function Friends() {
                 <Users className="h-8 w-8 text-slate-500" />
               </div>
               <h3 className="mt-4 text-lg font-semibold text-slate-200">
-                {search ? "No matching friends" : "No Ninjagos yet"}
+                {search ? "No matching ninjas" : "No ninjas in your dojo yet"}
               </h3>
               <p className="mt-2 text-sm text-slate-400">
                 {search
                   ? "Try a different search term"
-                  : "Visit profiles to add friends and build your network"}
+                  : "Visit profiles to recruit ninjas into your dojo"}
               </p>
             </Card>
           ) : (

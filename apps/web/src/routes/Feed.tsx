@@ -48,7 +48,7 @@ export default function Feed() {
           <p className="mt-1 text-sm text-slate-400">
             {tab === "popular" 
               ? "See what the community is loving right now" 
-              : "Latest from your Ninjagos"}
+              : "Latest from your Dojo"}
           </p>
         </div>
         {user && (
@@ -163,7 +163,7 @@ export default function Feed() {
               <h3 className="mt-4 text-lg font-semibold text-slate-200">No recipes yet</h3>
               <p className="mt-2 text-sm text-slate-400">
                 {tab === "network" 
-                  ? "Add some Ninjagos or wait for them to share recipes" 
+                  ? "Add some ninjas to your Dojo or wait for them to share recipes" 
                   : "Be the first to share a creation!"}
               </p>
               {user && (

@@ -21,24 +21,29 @@ export type RecipeSummary = {
 
 const visibilityConfig = {
   public: { icon: Eye, label: "Public" },
-  restricted: { icon: Users, label: "Ninjagos" },
+  restricted: { icon: Users, label: "Dojo only" },
   private: { icon: EyeOff, label: "Private" }
 };
 
 export function RecipeCard({ r, onMutate }: { r: RecipeSummary; onMutate?: () => void }) {
   const { user, csrfToken } = useAuth();
   const [starring, setStarring] = React.useState(false);
+  const [justThrew, setJustThrew] = React.useState(false);
 
   async function toggleStar(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
     if (!user || starring) return;
     setStarring(true);
+    const wasStarred = r.viewerStarred;
     try {
-      if (r.viewerStarred) {
+      if (wasStarred) {
         await api(`/recipes/${r.id}/star`, { method: "DELETE", csrf: csrfToken || "" });
       } else {
         await api(`/recipes/${r.id}/star`, { method: "POST", body: JSON.stringify({}), csrf: csrfToken || "" });
+        // Trigger throwing animation
+        setJustThrew(true);
+        setTimeout(() => setJustThrew(false), 600);
       }
       onMutate?.();
     } finally {
@@ -95,14 +100,26 @@ export function RecipeCard({ r, onMutate }: { r: RecipeSummary; onMutate?: () =>
               <button
                 onClick={toggleStar}
                 disabled={!user || starring}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                title={!user ? "Log in to throw stars" : r.viewerStarred ? "Take back your star" : "Throw a star! 🥷"}
+                className={`group/star relative flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
                   r.viewerStarred
                     ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
                     : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                 } ${!user ? "cursor-default opacity-60" : ""}`}
               >
-                <NinjaStar className={`h-4 w-4 ${starring ? "animate-pulse" : ""}`} />
+                <NinjaStar 
+                  className={`h-4 w-4 transition-transform ${
+                    starring ? "animate-pulse" : ""
+                  } ${justThrew ? "animate-[throw_0.6s_ease-out]" : ""} ${
+                    !r.viewerStarred && user ? "group-hover/star:rotate-45" : ""
+                  }`} 
+                />
                 <span>{r.starsCount}</span>
+                {justThrew && (
+                  <span className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-xs text-fuchsia-400 animate-[fadeUp_0.6s_ease-out_forwards]">
+                    Star thrown! 🥷
+                  </span>
+                )}
               </button>
             </div>
 

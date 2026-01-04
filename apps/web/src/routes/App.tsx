@@ -6,6 +6,7 @@ import Landing from "./Landing";
 import Login from "./Login";
 import Register from "./Register";
 import Feed from "./Feed";
+import Gallery from "./Gallery";
 import CreateRecipe from "./CreateRecipe";
 import RecipeDetail from "./RecipeDetail";
 import Profile from "./Profile";
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/feed" element={<Feed />} />
+          <Route path="/gallery" element={<Gallery />} />
           <Route
             path="/create"
             element={
