@@ -22,7 +22,77 @@ router.get("/", async (c) => {
      ORDER BY u.display_name COLLATE NOCASE`,
     [me.id]
   );
-  return c.json(jsonOk({ ok: true, friends }));
+  
+  // Pending incoming requests
+  const pending = await all<{ id: string; requestId: string; displayName: string; handle: string; avatarKey: string | null }>(
+    c.env,
+    `SELECT u.id, fr.id as requestId, u.display_name as displayName, u.handle, u.avatar_key as avatarKey
+     FROM friend_requests fr
+     JOIN users u ON u.id = fr.from_user_id
+     WHERE fr.to_user_id = ? AND fr.status = 'pending'
+     ORDER BY fr.created_at DESC`,
+    [me.id]
+  );
+  
+  // Outgoing requests (sent by me, waiting for response)
+  const outgoing = await all<{ id: string; requestId: string; displayName: string; handle: string; avatarKey: string | null }>(
+    c.env,
+    `SELECT u.id, fr.id as requestId, u.display_name as displayName, u.handle, u.avatar_key as avatarKey
+     FROM friend_requests fr
+     JOIN users u ON u.id = fr.to_user_id
+     WHERE fr.from_user_id = ? AND fr.status = 'pending'
+     ORDER BY fr.created_at DESC`,
+    [me.id]
+  );
+  
+  return c.json(jsonOk({ ok: true, friends, pending, outgoing }));
+});
+
+// Search for users to add as friends
+router.get("/search", async (c) => {
+  const me = c.get("user");
+  const q = (c.req.query("q") || "").trim();
+  
+  if (q.length < 2) {
+    return c.json(jsonOk({ ok: true, users: [] }));
+  }
+  
+  // Search by handle or display name, exclude self
+  const users = await all<{ id: string; displayName: string; handle: string; avatarKey: string | null }>(
+    c.env,
+    `SELECT u.id, u.display_name as displayName, u.handle, u.avatar_key as avatarKey
+     FROM users u
+     WHERE u.id != ?
+       AND (u.handle LIKE ? OR u.display_name LIKE ?)
+     ORDER BY 
+       CASE WHEN u.handle LIKE ? THEN 0 ELSE 1 END,
+       u.display_name COLLATE NOCASE
+     LIMIT 20`,
+    [me.id, `%${q}%`, `%${q}%`, `${q}%`]
+  );
+  
+  // Get friendship status for each user
+  const friendIds = new Set(
+    (await all<{ friend_id: string }>(c.env, "SELECT friend_id FROM friendships WHERE user_id = ?", [me.id])).map(r => r.friend_id)
+  );
+  
+  const pendingOutgoing = new Set(
+    (await all<{ to_user_id: string }>(c.env, "SELECT to_user_id FROM friend_requests WHERE from_user_id = ? AND status = 'pending'", [me.id])).map(r => r.to_user_id)
+  );
+  
+  const pendingIncoming = new Set(
+    (await all<{ from_user_id: string }>(c.env, "SELECT from_user_id FROM friend_requests WHERE to_user_id = ? AND status = 'pending'", [me.id])).map(r => r.from_user_id)
+  );
+  
+  const results = users.map(u => ({
+    ...u,
+    status: friendIds.has(u.id) ? "friend" as const
+          : pendingOutgoing.has(u.id) ? "pending_outgoing" as const
+          : pendingIncoming.has(u.id) ? "pending_incoming" as const
+          : "none" as const
+  }));
+  
+  return c.json(jsonOk({ ok: true, users: results }));
 });
 
 router.get("/requests", async (c) => {
