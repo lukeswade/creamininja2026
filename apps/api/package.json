@@ -1,0 +1,31 @@
+{
+  "name": "@creamininja/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --ip 0.0.0.0 --port 8787",
+    "deploy": "wrangler deploy",
+    "db:local:setup": "node ./scripts/db-local-setup.mjs",
+    "db:remote:apply": "wrangler d1 migrations apply creamininja-db --remote",
+    "db:seed:local": "wrangler d1 execute creamininja-db --local --file ./scripts/seed.sql",
+    "db:seed:remote": "wrangler d1 execute creamininja-db --remote --file ./scripts/seed.sql",
+    "lint": "eslint .",
+    "format": "prettier -w ."
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.4.1",
+    "aws4fetch": "^1.0.20",
+    "hono": "^4.6.7",
+    "jose": "^5.9.6",
+    "nanoid": "^5.0.7",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20251202.0",
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "wrangler": "^4.54.0"
+  }
+}

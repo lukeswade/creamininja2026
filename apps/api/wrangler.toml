@@ -1,0 +1,25 @@
+name = "creamininja-api"
+main = "src/index.ts"
+compatibility_date = "2025-12-15"
+
+# Bindings
+[[d1_databases]]
+binding = "DB"
+database_name = "creamininja-db"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+[[r2_buckets]]
+binding = "UPLOADS"
+bucket_name = "creamininja-uploads"
+
+[vars]
+ENV = "dev"
+APP_ORIGIN = "http://localhost:5173"
+COOKIE_DOMAIN = "localhost"
+TURNSTILE_SITE_KEY = "REPLACE_WITH_SITE_KEY"
+TURNSTILE_BYPASS = "true" # set false in prod
+
+# Secrets to set via wrangler secret put:
+# - SESSION_SIGNING_SECRET
+# - TURNSTILE_SECRET_KEY
+# - OPENAI_API_KEY
