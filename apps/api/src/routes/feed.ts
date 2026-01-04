@@ -6,25 +6,46 @@ import { jsonOk } from "../util/http";
 
 const router = new Hono<{ Bindings: Env }>();
 
-function recipeSelect(viewerId: string | null) {
-  const starredJoin = viewerId
-    ? `LEFT JOIN stars s ON s.recipe_id = r.id AND s.user_id = '${viewerId.replace(/'/g, "''")}'`
-    : `LEFT JOIN stars s ON 1=0`;
-  return `
-    SELECT
-      r.id, r.title, r.description, r.category, r.visibility,
-      r.image_key as imageKey,
-      r.stars_count as starsCount,
-      r.created_at as createdAt,
-      u.id as authorId,
-      u.display_name as authorDisplayName,
-      u.handle as authorHandle,
-      u.avatar_key as authorAvatarKey,
-      CASE WHEN s.user_id IS NULL THEN 0 ELSE 1 END as viewerStarred
-    FROM recipes r
-    JOIN users u ON u.id = r.author_id
-    ${starredJoin}
-  `;
+function recipeSelect(viewerId: string | null): { sql: string; params: any[] } {
+  // Use parameterized query to prevent SQL injection
+  if (viewerId) {
+    return {
+      sql: `
+        SELECT
+          r.id, r.title, r.description, r.category, r.visibility,
+          r.image_key as imageKey,
+          r.stars_count as starsCount,
+          r.created_at as createdAt,
+          u.id as authorId,
+          u.display_name as authorDisplayName,
+          u.handle as authorHandle,
+          u.avatar_key as authorAvatarKey,
+          CASE WHEN s.user_id IS NULL THEN 0 ELSE 1 END as viewerStarred
+        FROM recipes r
+        JOIN users u ON u.id = r.author_id
+        LEFT JOIN stars s ON s.recipe_id = r.id AND s.user_id = ?
+      `,
+      params: [viewerId]
+    };
+  }
+
+  return {
+    sql: `
+      SELECT
+        r.id, r.title, r.description, r.category, r.visibility,
+        r.image_key as imageKey,
+        r.stars_count as starsCount,
+        r.created_at as createdAt,
+        u.id as authorId,
+        u.display_name as authorDisplayName,
+        u.handle as authorHandle,
+        u.avatar_key as authorAvatarKey,
+        0 as viewerStarred
+      FROM recipes r
+      JOIN users u ON u.id = r.author_id
+    `,
+    params: []
+  };
 }
 
 router.get("/network", authOptional, async (c) => {
@@ -32,9 +53,10 @@ router.get("/network", authOptional, async (c) => {
 
   if (!viewer) return c.json(jsonOk({ ok: true, items: [] }), 200);
 
+  const base = recipeSelect(viewer);
   const items = await all<any>(
     c.env,
-    `${recipeSelect(viewer)}
+    `${base.sql}
      WHERE
        (r.visibility = 'public')
        OR (r.author_id = ?)
@@ -46,7 +68,7 @@ router.get("/network", authOptional, async (c) => {
          ))
      ORDER BY r.created_at DESC
      LIMIT 50`,
-    [viewer, viewer, viewer]
+    [...base.params, viewer, viewer, viewer]
   );
 
   return c.json(jsonOk({ ok: true, items: items.map(normalize) }));
@@ -57,6 +79,8 @@ router.get("/popular", authOptional, async (c) => {
   const window = (c.req.query("window") || "week").toLowerCase();
 
   const dt = windowToSql(window);
+  const base = recipeSelect(viewer);
+
   // Popular feed includes: viewer-visible recipes + public recipes
   // (If not logged in, public only).
   const visibilityWhere = viewer
@@ -74,16 +98,16 @@ router.get("/popular", authOptional, async (c) => {
     `
     : `(r.visibility = 'public')`;
 
-  const params = viewer ? [viewer, viewer, viewer] : [];
+  const visibilityParams = viewer ? [viewer, viewer, viewer] : [];
 
   const items = await all<any>(
     c.env,
-    `${recipeSelect(viewer)}
+    `${base.sql}
      WHERE ${visibilityWhere}
        AND r.created_at >= ${dt}
      ORDER BY r.stars_count DESC, r.created_at DESC
      LIMIT 50`,
-    params
+    [...base.params, ...visibilityParams]
   );
 
   return c.json(jsonOk({ ok: true, items: items.map(normalize) }));

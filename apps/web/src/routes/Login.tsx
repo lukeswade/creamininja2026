@@ -6,6 +6,8 @@ import { Button } from "../components/Button";
 import { Turnstile } from "../components/Turnstile";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { NinjaStar } from "../components/NinjaStar";
+import { Mail, Lock } from "lucide-react";
 
 export default function Login() {
   const nav = useNavigate();
@@ -35,31 +37,66 @@ export default function Login() {
   }
 
   return (
-    <Card className="mx-auto max-w-md">
-      <h2 className="text-lg font-semibold">Log in</h2>
-      <p className="mt-1 text-sm text-slate-400">
-        No account?{" "}
-        <Link to="/register" className="text-slate-200 hover:text-white">
-          Sign up
-        </Link>
-      </p>
-
-      <form className="mt-4 grid gap-3" onSubmit={submit}>
-        <div>
-          <label className="text-xs text-slate-400">Email</label>
-          <Input value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
-        </div>
-        <div>
-          <label className="text-xs text-slate-400">Password</label>
-          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <Card className="w-full max-w-md">
+        <div className="mb-6 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500">
+            <NinjaStar className="h-6 w-6 text-white" />
+          </div>
+          <h2 className="mt-4 text-2xl font-bold text-slate-100">Welcome back</h2>
+          <p className="mt-2 text-sm text-slate-400">
+            Don't have an account?{" "}
+            <Link to="/register" className="text-violet-400 hover:text-violet-300 font-medium">
+              Sign up free
+            </Link>
+          </p>
         </div>
 
-        <Turnstile siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY} onToken={setTurnstileToken} />
-        {err && <div className="rounded-md border border-red-900/50 bg-red-950/40 px-3 py-2 text-sm text-red-200">{err}</div>}
-        <Button disabled={busy || (!turnstileToken && !!import.meta.env.VITE_TURNSTILE_SITE_KEY)} type="submit">
-          {busy ? "Signing in..." : "Sign in"}
-        </Button>
-      </form>
-    </Card>
+        <form className="grid gap-4" onSubmit={submit}>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-300">Email</label>
+            <div className="relative">
+              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+              <Input 
+                className="pl-10" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                autoComplete="email" 
+                type="email"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-300">Password</label>
+            <div className="relative">
+              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+              <Input 
+                className="pl-10" 
+                type="password" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                autoComplete="current-password" 
+              />
+            </div>
+          </div>
+
+          <Turnstile siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY} onToken={setTurnstileToken} />
+          
+          {err && (
+            <div className="rounded-lg border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-200">
+              {err}
+            </div>
+          )}
+          
+          <Button 
+            className="mt-2 w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 py-2.5 hover:brightness-110" 
+            disabled={busy || (!turnstileToken && !!import.meta.env.VITE_TURNSTILE_SITE_KEY)} 
+            type="submit"
+          >
+            {busy ? "Signing in..." : "Sign in"}
+          </Button>
+        </form>
+      </Card>
+    </div>
   );
 }

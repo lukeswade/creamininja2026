@@ -1,18 +1,34 @@
 import React from "react";
 import { API_BASE } from "../lib/api";
 
+type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl" | number;
+
+const sizeMap: Record<Exclude<AvatarSize, number>, number> = {
+  xs: 24,
+  sm: 32,
+  md: 40,
+  lg: 56,
+  xl: 96
+};
+
 export function Avatar({
   avatarKey,
+  handle,
   name,
-  size = 28,
+  size = "sm",
   className = ""
 }: {
   avatarKey?: string | null;
-  name: string;
-  size?: number;
+  handle?: string;
+  name?: string;
+  size?: AvatarSize;
   className?: string;
 }) {
-  const initials = (name || "?")
+  const displayName = name || handle || "?";
+  const pixelSize = typeof size === "number" ? size : sizeMap[size];
+  const fontSize = pixelSize < 32 ? "text-xs" : pixelSize < 48 ? "text-sm" : "text-base";
+
+  const initials = displayName
     .trim()
     .split(/\s+/)
     .slice(0, 2)
@@ -24,11 +40,11 @@ export function Avatar({
     return (
       <img
         src={`${API_BASE}/uploads/file/${encodeURIComponent(avatarKey)}`}
-        alt={name}
-        width={size}
-        height={size}
-        className={`rounded-full border border-slate-800 object-cover ${className}`}
-        style={{ width: size, height: size }}
+        alt={displayName}
+        width={pixelSize}
+        height={pixelSize}
+        className={`rounded-full border border-slate-700 object-cover ${className}`}
+        style={{ width: pixelSize, height: pixelSize }}
         loading="lazy"
       />
     );
@@ -36,10 +52,10 @@ export function Avatar({
 
   return (
     <div
-      className={`grid place-items-center rounded-full border border-slate-800 bg-slate-900 text-xs font-semibold text-slate-200 ${className}`}
-      style={{ width: size, height: size }}
-      aria-label={name}
-      title={name}
+      className={`grid place-items-center rounded-full border border-slate-700 bg-gradient-to-br from-violet-600/30 to-fuchsia-600/30 ${fontSize} font-semibold text-slate-200 ${className}`}
+      style={{ width: pixelSize, height: pixelSize }}
+      aria-label={displayName}
+      title={displayName}
     >
       {initials}
     </div>

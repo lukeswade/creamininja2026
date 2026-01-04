@@ -1,7 +1,7 @@
 // apps/api/src/util/gemini.ts
 export type GeminiGenerateArgs = {
   apiKey: string;
-  model?: string; // e.g. "gemini-3-flash-preview"
+  model?: string; // e.g. "gemini-2.5-flash"
   system?: string;
   user: string;
   // Optional image bytes as base64 (no data: prefix)
@@ -18,7 +18,7 @@ function stripJsonFence(s: string) {
 }
 
 export async function geminiGenerateJSON<T>(args: GeminiGenerateArgs): Promise<T> {
-  const model = args.model ?? "gemini-3-flash-preview";
+  const model = args.model ?? "gemini-2.5-flash";
 
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/` +

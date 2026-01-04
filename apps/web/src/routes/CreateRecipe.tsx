@@ -192,38 +192,41 @@ export default function CreateRecipe() {
 
   return (
     <div className="grid gap-4">
-      <Card>
-        <div className="flex items-start justify-between gap-3">
+      {/* Prominent Surprise Me section at the very top */}
+      <Card className="bg-gradient-to-r from-violet-950/40 to-fuchsia-950/40 border-violet-800/50">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
-            <div className="text-lg font-semibold">Create a recipe</div>
-            <div className="mt-1 text-sm text-slate-400">Manual or AI-assisted. Photos are optional.</div>
+            <div className="text-lg font-semibold text-violet-100">✨ Feeling lucky?</div>
+            <div className="mt-1 text-sm text-violet-300">Let AI create a completely random CREAMi recipe for you!</div>
           </div>
-
-          {/* NEW: Surprise Me button, front-and-center */}
-          <div className="shrink-0">
-            <Button onClick={surpriseMe} disabled={surpriseBusy || aiBusy || busy}>
-              {surpriseBusy ? "Summoning..." : "Surprise Me"}
-            </Button>
-          </div>
+          <Button 
+            onClick={surpriseMe} 
+            disabled={surpriseBusy || aiBusy || busy}
+            className="bg-violet-600 hover:bg-violet-500 text-white px-6 py-3 text-base font-medium"
+          >
+            {surpriseBusy ? "✨ Summoning..." : "🎲 Surprise Me!"}
+          </Button>
         </div>
+      </Card>
+
+      <Card>
+        <div className="text-lg font-semibold">Create a recipe</div>
+        <div className="mt-1 text-sm text-slate-400">Fill in the basics. Only title and category are required.</div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <div>
-            <label className="text-xs text-slate-400">Title</label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Salted Oreo Blizzard Pint" />
+            <label className="text-xs text-slate-400">Title *</label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What's your creation called?" />
           </div>
 
-          {/* UX FIX: use a real select w/ placeholder instead of an Input+datalist */}
           <div>
-            <label className="text-xs text-slate-400">Category</label>
+            <label className="text-xs text-slate-400">Category *</label>
             <select
               className="mt-1 w-full rounded-md border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             >
-              <option value="" disabled>
-                Select a category…
-              </option>
+              <option value="">Select a category…</option>
               <option value="Ice Cream">Ice Cream</option>
               <option value="Gelato">Gelato</option>
               <option value="Sorbet">Sorbet</option>
@@ -231,18 +234,18 @@ export default function CreateRecipe() {
               <option value="Adult">Adult</option>
               <option value="Creamy">Creamy</option>
               <option value="Decadent">Decadent</option>
-              <option value="Surprise">Surprise</option>
+              <option value="Other">Other</option>
             </select>
           </div>
 
           <div className="md:col-span-2">
-            <label className="text-xs text-slate-400">Description</label>
+            <label className="text-xs text-slate-400">Description <span className="text-slate-600">(optional)</span></label>
             <textarea
               className="mt-1 w-full rounded-md border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400/30"
-              rows={3}
+              rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Short hook + any special notes."
+              placeholder=""
             />
           </div>
 
@@ -260,7 +263,7 @@ export default function CreateRecipe() {
           </div>
 
           <div>
-            <label className="text-xs text-slate-400">Photo (optional)</label>
+            <label className="text-xs text-slate-400">Photo <span className="text-slate-600">(optional)</span></label>
             <input
               className="mt-1 block w-full text-sm text-slate-300 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-950 hover:file:bg-white"
               type="file"
@@ -270,13 +273,12 @@ export default function CreateRecipe() {
                 if (f) uploadPhoto(f);
               }}
             />
-            {imageKey && <div className="mt-2 text-xs text-slate-400">Uploaded: {imageKey}</div>}
           </div>
 
           <div className="md:col-span-2">
             {imageKey && (
               <img
-                className="mt-2 max-h-[320px] rounded-xl border border-slate-800 object-cover"
+                className="mt-2 max-h-[240px] rounded-xl border border-slate-800 object-cover"
                 src={`${API_BASE}/uploads/file/${encodeURIComponent(imageKey)}`}
                 alt="Uploaded recipe"
               />
@@ -284,23 +286,23 @@ export default function CreateRecipe() {
           </div>
 
           <div>
-            <label className="text-xs text-slate-400">Ingredients (one per line)</label>
+            <label className="text-xs text-slate-400">Ingredients <span className="text-slate-600">(optional, one per line)</span></label>
             <textarea
               className="mt-1 w-full rounded-md border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400/30"
-              rows={10}
+              rows={8}
               value={ingredientsText}
               onChange={(e) => setIngredientsText(e.target.value)}
-              placeholder={"milk\ncream\nsugar\nvanilla"}
+              placeholder=""
             />
           </div>
           <div>
-            <label className="text-xs text-slate-400">Steps (one per line)</label>
+            <label className="text-xs text-slate-400">Steps <span className="text-slate-600">(optional, one per line)</span></label>
             <textarea
               className="mt-1 w-full rounded-md border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400/30"
-              rows={10}
+              rows={8}
               value={stepsText}
               onChange={(e) => setStepsText(e.target.value)}
-              placeholder={"Blend base\nFreeze 24h\nSpin on Ice Cream\nRespin if crumbly\nAdd mix-ins"}
+              placeholder=""
             />
           </div>
         </div>
@@ -308,7 +310,7 @@ export default function CreateRecipe() {
         {err && <div className="mt-4 rounded-md border border-red-900/50 bg-red-950/40 px-3 py-2 text-sm text-red-200">{err}</div>}
 
         <div className="mt-4 flex flex-wrap gap-3">
-          <Button onClick={create} disabled={busy || !title || !category.trim()}>
+          <Button onClick={create} disabled={busy || !title.trim() || !category}>
             {busy ? "Saving..." : "Save recipe"}
           </Button>
         </div>
@@ -319,10 +321,10 @@ export default function CreateRecipe() {
         <p className="mt-1 text-sm text-slate-400">List ingredients and get a CREAMi-ready recipe draft.</p>
         <textarea
           className="mt-3 w-full rounded-md border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400/30"
-          rows={6}
+          rows={5}
           value={aiIngredients}
           onChange={(e) => setAiIngredients(e.target.value)}
-          placeholder={"milk\nbanana\npeanut butter\ncocoa\nprotein powder"}
+          placeholder=""
         />
         <div className="mt-3">
           <Button onClick={aiGenerate} disabled={aiBusy || !aiIngredients.trim()}>
@@ -332,7 +334,7 @@ export default function CreateRecipe() {
 
         <div className="mt-6 border-t border-slate-800 pt-4">
           <div className="text-xs font-medium text-slate-300">Or generate from a photo</div>
-          <p className="mt-1 text-sm text-slate-400">Upload a photo of ingredients; the AI will infer a sensible base recipe in your chosen category.</p>
+          <p className="mt-1 text-sm text-slate-400">Upload a photo of ingredients; the AI will infer a recipe.</p>
 
           <input
             className="mt-3 block w-full text-sm text-slate-300 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-950 hover:file:bg-white"

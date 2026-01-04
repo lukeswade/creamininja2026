@@ -168,12 +168,12 @@ router.get("/by-handle/:handle", authOptional, async (c) => {
 router.use("*", authOptional, requireAuth, requireCsrf);
 
 const RecipeCreateSchema = z.object({
-  title: z.string().min(3).max(120),
+  title: z.string().min(1).max(120),
   description: z.string().max(1000).optional().nullable(),
-  category: z.string().min(2).max(40),
+  category: z.string().min(1).max(40),
   visibility: z.enum(["private", "restricted", "public"]),
-  ingredients: z.array(z.string().min(1).max(160)).min(1).max(80),
-  steps: z.array(z.string().min(1).max(400)).min(1).max(40),
+  ingredients: z.array(z.string().min(1).max(160)).max(80).optional().default([]),
+  steps: z.array(z.string().min(1).max(400)).max(40).optional().default([]),
   imageKey: z.string().max(500).optional().nullable()
 });
 

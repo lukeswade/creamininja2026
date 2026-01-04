@@ -1,124 +1,233 @@
 import React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
-import { useAuth } from "../lib/auth";
 import { Card } from "../components/Card";
-import { Input } from "../components/Input";
 import { Button } from "../components/Button";
+import { Avatar } from "../components/Avatar";
+import { Link, Navigate } from "react-router-dom";
+import { useAuth } from "../lib/auth";
+import { Skeleton } from "../components/Skeleton";
+import { Users, UserCheck, UserX, Clock, Search } from "lucide-react";
 
-type Friend = { id: string; displayName: string; handle: string; avatarKey: string | null };
-type ReqIn = { id: string; fromUserId: string; displayName: string; handle: string; createdAt: string };
-type ReqOut = { id: string; toUserId: string; displayName: string; handle: string; createdAt: string };
+type Friend = { id: string; handle: string; displayName: string; avatarKey: string | null };
+type FriendsResp = { ok: true; friends: Friend[]; pending: Friend[] };
 
 export default function Friends() {
-  const { csrfToken } = useAuth();
+  const { user } = useAuth();
   const qc = useQueryClient();
-  const [target, setTarget] = React.useState("");
-  const [err, setErr] = React.useState<string | null>(null);
+  const [tab, setTab] = React.useState<"friends" | "pending">("friends");
+  const [search, setSearch] = React.useState("");
 
-  const friends = useQuery({
+  const q = useQuery({
     queryKey: ["friends"],
-    queryFn: () => api<{ ok: true; friends: Friend[] }>("/friends", { method: "GET" })
+    queryFn: () => api<FriendsResp>("/friends", { method: "GET" }),
+    enabled: !!user
   });
-
-  const reqs = useQuery({
-    queryKey: ["friend-requests"],
-    queryFn: () => api<{ ok: true; incoming: ReqIn[]; outgoing: ReqOut[] }>("/friends/requests", { method: "GET" })
-  });
-
-  async function send() {
-    setErr(null);
-    try {
-      await api("/friends/request", { method: "POST", csrf: csrfToken || "", body: JSON.stringify({ handleOrEmail: target }) });
-      setTarget("");
-      qc.invalidateQueries({ queryKey: ["friend-requests"] });
-    } catch (e: any) {
-      setErr(e.message);
-    }
-  }
 
   async function accept(id: string) {
-    await api("/friends/accept", { method: "POST", csrf: csrfToken || "", body: JSON.stringify({ requestId: id }) });
+    await api("/friends/accept", { method: "POST", body: JSON.stringify({ fromUserId: id }) });
     qc.invalidateQueries({ queryKey: ["friends"] });
-    qc.invalidateQueries({ queryKey: ["friend-requests"] });
   }
 
-  async function reject(id: string) {
-    await api("/friends/reject", { method: "POST", csrf: csrfToken || "", body: JSON.stringify({ requestId: id }) });
-    qc.invalidateQueries({ queryKey: ["friend-requests"] });
+  async function decline(id: string) {
+    await api("/friends/decline", { method: "POST", body: JSON.stringify({ fromUserId: id }) });
+    qc.invalidateQueries({ queryKey: ["friends"] });
   }
+
+  async function remove(id: string) {
+    await api(`/friends/${id}`, { method: "DELETE" });
+    qc.invalidateQueries({ queryKey: ["friends"] });
+  }
+
+  if (!user) return <Navigate to="/login" replace />;
+
+  const friends = q.data?.friends || [];
+  const pending = q.data?.pending || [];
+
+  const filteredFriends = friends.filter(
+    (f) =>
+      f.displayName.toLowerCase().includes(search.toLowerCase()) ||
+      f.handle.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div className="grid gap-4">
-      <Card>
-        <div className="text-lg font-semibold">Ninjagos</div>
-        <div className="mt-1 text-sm text-slate-400">Friends list + recipe sharing.</div>
-        <div className="mt-4 flex gap-2">
-          <Input placeholder="Friend handle or email" value={target} onChange={(e) => setTarget(e.target.value)} />
-          <Button onClick={send} disabled={!target.trim()}>
-            Send request
-          </Button>
+    <div className="grid gap-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-slate-100">Your Ninjagos</h1>
+        <p className="mt-1 text-sm text-slate-400">
+          Connect with fellow recipe creators
+        </p>
+      </div>
+
+      {/* Tabs */}
+      <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setTab("friends")}
+            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
+              tab === "friends"
+                ? "bg-violet-600 text-white"
+                : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+            }`}
+          >
+            <Users className="h-4 w-4" />
+            Friends
+            {friends.length > 0 && (
+              <span className="ml-1 rounded-full bg-slate-700 px-2 py-0.5 text-xs">
+                {friends.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setTab("pending")}
+            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
+              tab === "pending"
+                ? "bg-violet-600 text-white"
+                : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+            }`}
+          >
+            <Clock className="h-4 w-4" />
+            Requests
+            {pending.length > 0 && (
+              <span className="ml-1 rounded-full bg-fuchsia-600 px-2 py-0.5 text-xs text-white">
+                {pending.length}
+              </span>
+            )}
+          </button>
         </div>
-        {err && <div className="mt-3 text-sm text-red-200">{err}</div>}
+
+        {tab === "friends" && friends.length > 3 && (
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <input
+              type="text"
+              placeholder="Search friends..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-lg border border-slate-700 bg-slate-900/50 py-2 pl-10 pr-4 text-sm text-slate-200 placeholder-slate-500 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+            />
+          </div>
+        )}
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <div className="text-sm font-semibold">Friends</div>
-          <div className="mt-3 grid gap-2">
-            {(friends.data?.friends || []).map((f) => (
-              <div key={f.id} className="flex items-center justify-between rounded-md border border-slate-800 px-3 py-2">
-                <div>
-                  <div className="text-sm text-slate-100">{f.displayName}</div>
-                  <div className="text-xs text-slate-400">@{f.handle}</div>
-                </div>
+      {/* Loading */}
+      {q.isLoading && (
+        <div className="grid gap-3">
+          {[0, 1, 2].map((i) => (
+            <Card key={i} className="flex items-center gap-4">
+              <Skeleton className="h-12 w-12 rounded-full" />
+              <div className="flex-1">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="mt-2 h-3 w-24" />
               </div>
-            ))}
-            {friends.data?.friends?.length === 0 && <div className="text-sm text-slate-400">No Ninjagos yet.</div>}
-          </div>
-        </Card>
+              <Skeleton className="h-9 w-24" />
+            </Card>
+          ))}
+        </div>
+      )}
 
-        <Card>
-          <div className="text-sm font-semibold">Requests</div>
+      {/* Friends list */}
+      {!q.isLoading && tab === "friends" && (
+        <>
+          {filteredFriends.length === 0 ? (
+            <Card className="text-center py-12">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-800">
+                <Users className="h-8 w-8 text-slate-500" />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold text-slate-200">
+                {search ? "No matching friends" : "No Ninjagos yet"}
+              </h3>
+              <p className="mt-2 text-sm text-slate-400">
+                {search
+                  ? "Try a different search term"
+                  : "Visit profiles to add friends and build your network"}
+              </p>
+            </Card>
+          ) : (
+            <div className="grid gap-3">
+              {filteredFriends.map((f) => (
+                <Card key={f.id} className="flex items-center gap-4">
+                  <Link to={`/@${f.handle}`}>
+                    <Avatar handle={f.handle} avatarKey={f.avatarKey} size="md" />
+                  </Link>
+                  <div className="flex-1 min-w-0">
+                    <Link to={`/@${f.handle}`} className="hover:underline">
+                      <p className="font-medium text-slate-200 truncate">
+                        {f.displayName}
+                      </p>
+                    </Link>
+                    <p className="text-sm text-slate-400 truncate">@{f.handle}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => remove(f.id)}
+                    className="text-slate-400 hover:text-red-400"
+                  >
+                    <UserX className="h-4 w-4" />
+                  </Button>
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
-          <div className="mt-3">
-            <div className="text-xs text-slate-500">Incoming</div>
-            <div className="mt-2 grid gap-2">
-              {(reqs.data?.incoming || []).map((r) => (
-                <div key={r.id} className="flex items-center justify-between rounded-md border border-slate-800 px-3 py-2">
-                  <div>
-                    <div className="text-sm text-slate-100">{r.displayName}</div>
-                    <div className="text-xs text-slate-400">@{r.handle}</div>
+      {/* Pending requests */}
+      {!q.isLoading && tab === "pending" && (
+        <>
+          {pending.length === 0 ? (
+            <Card className="text-center py-12">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-800">
+                <Clock className="h-8 w-8 text-slate-500" />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold text-slate-200">
+                No pending requests
+              </h3>
+              <p className="mt-2 text-sm text-slate-400">
+                When someone wants to connect, you'll see them here
+              </p>
+            </Card>
+          ) : (
+            <div className="grid gap-3">
+              {pending.map((f) => (
+                <Card key={f.id} className="flex items-center gap-4">
+                  <Link to={`/@${f.handle}`}>
+                    <Avatar handle={f.handle} avatarKey={f.avatarKey} size="md" />
+                  </Link>
+                  <div className="flex-1 min-w-0">
+                    <Link to={`/@${f.handle}`} className="hover:underline">
+                      <p className="font-medium text-slate-200 truncate">
+                        {f.displayName}
+                      </p>
+                    </Link>
+                    <p className="text-sm text-slate-400 truncate">@{f.handle}</p>
                   </div>
                   <div className="flex gap-2">
-                    <Button onClick={() => accept(r.id)}>Accept</Button>
-                    <Button variant="ghost" onClick={() => reject(r.id)}>
-                      Reject
+                    <Button
+                      size="sm"
+                      onClick={() => accept(f.id)}
+                      className="gap-1.5 bg-gradient-to-r from-violet-600 to-fuchsia-600"
+                    >
+                      <UserCheck className="h-4 w-4" />
+                      Accept
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => decline(f.id)}
+                      className="text-slate-400 hover:text-red-400"
+                    >
+                      <UserX className="h-4 w-4" />
                     </Button>
                   </div>
-                </div>
+                </Card>
               ))}
-              {reqs.data?.incoming?.length === 0 && <div className="text-sm text-slate-400">No incoming requests.</div>}
             </div>
-          </div>
-
-          <div className="mt-4">
-            <div className="text-xs text-slate-500">Outgoing</div>
-            <div className="mt-2 grid gap-2">
-              {(reqs.data?.outgoing || []).map((r) => (
-                <div key={r.id} className="flex items-center justify-between rounded-md border border-slate-800 px-3 py-2">
-                  <div>
-                    <div className="text-sm text-slate-100">{r.displayName}</div>
-                    <div className="text-xs text-slate-400">@{r.handle}</div>
-                  </div>
-                  <div className="text-xs text-slate-500">Pending</div>
-                </div>
-              ))}
-              {reqs.data?.outgoing?.length === 0 && <div className="text-sm text-slate-400">No outgoing requests.</div>}
-            </div>
-          </div>
-        </Card>
-      </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

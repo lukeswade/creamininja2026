@@ -5,11 +5,13 @@ import { rateLimit } from "../middleware/rateLimit";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { jsonOk, badRequest } from "../util/http";
+import { geminiGenerateJSON } from "../util/gemini";
 
 /**
- * AI Provider (OpenAI Responses API).
+ * AI Provider (Gemini 2.0 Flash).
  * - Ingredients → recipe
  * - Image key → recipe (client uploads image first, then references key)
+ * - Surprise → random creative recipe
  *
  * Output uses a strict JSON schema to reduce malformed responses.
  */
@@ -23,11 +25,11 @@ router.use(
 );
 
 const RecipeSchema = z.object({
-  title: z.string().min(3).max(120),
-  category: z.string().min(2).max(40),
+  title: z.string().min(1).max(120),
+  category: z.string().min(1).max(40),
   description: z.string().max(1000).optional(),
-  ingredients: z.array(z.string().min(1).max(160)).min(3).max(60),
-  steps: z.array(z.string().min(1).max(400)).min(3).max(25),
+  ingredients: z.array(z.string().min(1).max(160)).min(1).max(60),
+  steps: z.array(z.string().min(1).max(400)).min(1).max(25),
   notes: z.array(z.string().min(1).max(200)).max(10).optional(),
   allergens: z.array(z.string().min(1).max(40)).max(10).optional()
 });
@@ -40,29 +42,41 @@ const GenFromIngredients = z.object({
 });
 
 router.post("/from-ingredients", zValidator("json", GenFromIngredients), async (c) => {
-  const me = c.get("user");
   const body = c.req.valid("json");
 
   const system = `You are an expert Ninja CREAMi recipe developer.
-Return ONLY valid JSON matching the provided schema.
+Return ONLY valid JSON matching this schema:
+{
+  "title": string (3-120 chars),
+  "category": string (2-40 chars),
+  "description": string (optional, max 1000 chars),
+  "ingredients": string[] (3-60 items),
+  "steps": string[] (3-25 items),
+  "notes": string[] (optional, max 10 items),
+  "allergens": string[] (optional, max 10 items)
+}
 Include clear CREAMi-specific instructions (freeze time, respin notes, mix-ins). Avoid unsafe food advice.`;
 
-  const prompt = {
-    user: {
-      ingredients: body.ingredients,
-      category: body.category,
-      dietary: body.dietary ?? [],
-      creativity: body.creativity
+  const userPrompt = `Create a ${body.category} CREAMi recipe using these ingredients: ${body.ingredients.join(", ")}.
+Dietary restrictions: ${(body.dietary ?? []).join(", ") || "none"}.
+Creativity level: ${body.creativity}.`;
+
+  try {
+    const recipe = await geminiGenerateJSON<any>({
+      apiKey: c.env.GEMINI_API_KEY,
+      system,
+      user: userPrompt
+    });
+
+    const parsed = RecipeSchema.safeParse(recipe);
+    if (!parsed.success) {
+      return c.json(badRequest("Model output did not match schema", parsed.error.flatten()), 400);
     }
-  };
 
-  const recipe = await callOpenAIRecipe(c.env, system, JSON.stringify(prompt));
-  const parsed = RecipeSchema.safeParse(recipe);
-  if (!parsed.success) {
-    return c.json(badRequest("Model output did not match schema", parsed.error.flatten()), 400);
+    return c.json(jsonOk({ ok: true, recipe: parsed.data }));
+  } catch (err: any) {
+    return c.json(badRequest(err.message || "AI generation failed"), 400);
   }
-
-  return c.json(jsonOk({ ok: true, recipe: parsed.data }));
 });
 
 const GenFromImage = z.object({
@@ -83,25 +97,36 @@ router.post("/from-image", zValidator("json", GenFromImage), async (c) => {
   const b64 = arrayBufferToBase64(bytes);
 
   const system = `You are an expert Ninja CREAMi recipe developer.
-Return ONLY valid JSON matching the provided schema.
+Return ONLY valid JSON matching this schema:
+{
+  "title": string (3-120 chars),
+  "category": string (2-40 chars),
+  "description": string (optional, max 1000 chars),
+  "ingredients": string[] (3-60 items),
+  "steps": string[] (3-25 items),
+  "notes": string[] (optional, max 10 items),
+  "allergens": string[] (optional, max 10 items)
+}
 First infer reasonable ingredients from the image; then propose a recipe in the requested category.
 Avoid unsafe food advice.`;
 
-  const input = [
-    {
-      role: "user",
-      content: [
-        { type: "input_text", text: `Generate a ${category} CREAMi recipe. The user provided a photo of ingredients.` },
-        { type: "input_image", image_url: `data:${contentType};base64,${b64}` }
-      ]
-    }
-  ];
+  const userPrompt = `Generate a ${category} CREAMi recipe based on this photo of ingredients.`;
 
-  const recipe = await callOpenAIRecipeWithInput(c.env, system, input);
-  const parsed = RecipeSchema.safeParse(recipe);
-  if (!parsed.success) return c.json(badRequest("Model output did not match schema", parsed.error.flatten()), 400);
+  try {
+    const recipe = await geminiGenerateJSON<any>({
+      apiKey: c.env.GEMINI_API_KEY,
+      system,
+      user: userPrompt,
+      image: { mimeType: contentType, base64: b64 }
+    });
 
-  return c.json(jsonOk({ ok: true, recipe: parsed.data }));
+    const parsed = RecipeSchema.safeParse(recipe);
+    if (!parsed.success) return c.json(badRequest("Model output did not match schema", parsed.error.flatten()), 400);
+
+    return c.json(jsonOk({ ok: true, recipe: parsed.data }));
+  } catch (err: any) {
+    return c.json(badRequest(err.message || "AI generation failed"), 400);
+  }
 });
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
@@ -111,65 +136,62 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
-async function callOpenAIRecipe(env: Env, system: string, userText: string) {
-  // Responses API: see docs. We request structured outputs by asking for JSON matching schema.
-  // (If your account has "structured outputs" parameter support, you can enhance this endpoint later.)
-  const res = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${env.OPENAI_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: "gpt-5-mini",
-      input: [
-        { role: "system", content: [{ type: "input_text", text: system }] },
-        { role: "user", content: [{ type: "input_text", text: userText }] }
-      ],
-      // Encourage JSON-only outputs
-      text: { format: { type: "json_object" } }
-    })
-  });
+// Categories for random "Surprise Me" generation
+const SURPRISE_CATEGORIES = ["Ice Cream", "Gelato", "Sorbet", "Slushie", "Creamy", "Decadent"];
+const SURPRISE_THEMES = [
+  "classic vanilla bean with a twist",
+  "chocolate lovers dream",
+  "tropical fruit paradise",
+  "peanut butter cup indulgence",
+  "cookies and cream explosion",
+  "salted caramel delight",
+  "berry blast summer treat",
+  "coffee shop inspired",
+  "birthday cake celebration",
+  "mint chocolate chip refresh",
+  "banana foster homage",
+  "key lime pie tribute",
+  "maple pecan autumn vibes",
+  "s'mores campfire classic",
+  "strawberry cheesecake swirl"
+];
 
-  const data = await res.json();
-  if (!res.ok) throw new Error(`OpenAI error: ${JSON.stringify(data)}`);
+router.post("/surprise", async (c) => {
+  const category = SURPRISE_CATEGORIES[Math.floor(Math.random() * SURPRISE_CATEGORIES.length)];
+  const theme = SURPRISE_THEMES[Math.floor(Math.random() * SURPRISE_THEMES.length)];
 
-  const text = extractOutputText(data);
-  return JSON.parse(text);
+  const system = `You are an expert Ninja CREAMi recipe developer.
+Return ONLY valid JSON matching this schema:
+{
+  "title": string (3-120 chars, creative and fun),
+  "category": string (2-40 chars),
+  "description": string (optional, max 1000 chars),
+  "ingredients": string[] (3-60 items with quantities),
+  "steps": string[] (3-25 items),
+  "notes": string[] (optional, max 10 items),
+  "allergens": string[] (optional, max 10 items)
 }
+Include clear CREAMi-specific instructions (freeze time, respin notes, mix-ins). Be creative and fun!`;
 
-async function callOpenAIRecipeWithInput(env: Env, system: string, input: any[]) {
-  const res = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${env.OPENAI_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: "gpt-5-mini",
-      input: [{ role: "system", content: [{ type: "input_text", text: system }] }, ...input],
-      text: { format: { type: "json_object" } }
-    })
-  });
+  const userPrompt = `Create an amazing ${category} CREAMi recipe with the theme: "${theme}". 
+Be creative with the name and ingredients! Make it sound delicious and fun.`;
 
-  const data = await res.json();
-  if (!res.ok) throw new Error(`OpenAI error: ${JSON.stringify(data)}`);
+  try {
+    const recipe = await geminiGenerateJSON<any>({
+      apiKey: c.env.GEMINI_API_KEY,
+      system,
+      user: userPrompt
+    });
 
-  const text = extractOutputText(data);
-  return JSON.parse(text);
-}
-
-function extractOutputText(resp: any): string {
-  // Responses API returns output array; we pull first text content.
-  const out = resp.output ?? [];
-  for (const item of out) {
-    if (item.type === "message") {
-      for (const c of item.content || []) {
-        if (c.type === "output_text" && typeof c.text === "string") return c.text;
-      }
+    const parsed = RecipeSchema.safeParse(recipe);
+    if (!parsed.success) {
+      return c.json(badRequest("Model output did not match schema", parsed.error.flatten()), 400);
     }
+
+    return c.json(jsonOk({ ok: true, recipe: parsed.data }));
+  } catch (err: any) {
+    return c.json(badRequest(err.message || "AI generation failed"), 400);
   }
-  throw new Error("No output_text in response");
-}
+});
 
 export default router;
