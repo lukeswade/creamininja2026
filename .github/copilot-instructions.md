@@ -34,7 +34,7 @@ This is a **monorepo** using pnpm workspaces with two main applications:
 
 ### Common
 - **Language:** TypeScript (strict mode enabled)
-- **Package Manager:** pnpm 9+ (required)
+- **Package Manager:** pnpm 9.0.0 (pinned via packageManager field)
 - **Node Version:** 20+
 - **Linting:** ESLint 9 with flat config
 - **Formatting:** Prettier
@@ -103,7 +103,7 @@ pnpm db:seed:local     # Optional: Add demo data
 
 # Web setup
 cd apps/web
-cp .env.example .env   # Configure environment variables
+# Configure environment variables in .env if needed (VITE_API_BASE, VITE_TURNSTILE_SITE_KEY)
 ```
 
 ### Running Locally
