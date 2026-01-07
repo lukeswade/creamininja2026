@@ -17,8 +17,10 @@ ENV = "prod"
 APP_ORIGIN = "https://creamininja.com"
 COOKIE_DOMAIN = "creamininja.com"
 TURNSTILE_BYPASS = false
+GOOGLE_CLIENT_ID = "426406689881-klvm84l1jarpd7ujc0fv8plkagm2thgo.apps.googleusercontent.com"
 
 # Secrets to set via wrangler secret put:
 # - SESSION_SIGNING_SECRET
 # - TURNSTILE_SECRET_KEY
 # - GEMINI_API_KEY
+# - GOOGLE_CLIENT_SECRET

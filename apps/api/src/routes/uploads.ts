@@ -32,6 +32,7 @@ router.post("/presign", zValidator("json", PresignSchema), async (c) => {
   const { kind, contentType, bytes } = c.req.valid("json");
 
   if (!/^image\/(jpeg|png|webp)$/.test(contentType)) return c.json(badRequest("Only jpeg/png/webp supported"), 400);
+  if (bytes > 2_500_000) return c.json(badRequest("Image too large (max ~2.5MB). Compress client-side."), 400);
 
   const ext = contentType.includes("jpeg") ? "jpg" : contentType.split("/")[1];
   const key = `${kind}/${me.id}/${newId("img")}.${ext}`;
@@ -73,9 +74,9 @@ router.post("/presign", zValidator("json", PresignSchema), async (c) => {
   const signed = await client.sign(url.toString(), {
     method: "PUT",
     headers: {
-      "content-type": contentType,
-      "content-length": String(bytes)
+      "content-type": contentType
     },
+    // Avoid signing content-length; browsers cannot reliably set it on PUT.
     aws: { signQuery: true, expires: 600 }
   });
 

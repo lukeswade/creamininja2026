@@ -4,7 +4,7 @@ import { Card } from "../components/Card";
 import { Input } from "../components/Input";
 import { Button } from "../components/Button";
 import { Turnstile } from "../components/Turnstile";
-import { api } from "../lib/api";
+import { api, API_BASE } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { NinjaStar } from "../components/NinjaStar";
 import { Mail, Lock } from "lucide-react";
@@ -50,6 +50,26 @@ export default function Login() {
               Sign up free
             </Link>
           </p>
+        </div>
+
+        <div className="grid gap-3">
+          <a
+            href={`${API_BASE}/auth/google`}
+            className="flex w-full items-center justify-center gap-3 rounded-md border border-slate-700 bg-slate-900/40 px-4 py-2.5 text-sm font-medium text-slate-100 transition hover:border-slate-500 hover:bg-slate-800"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
+              <path fill="#4285F4" d="M23.5 12.3c0-.7-.1-1.4-.2-2H12v3.8h6.5a5.6 5.6 0 0 1-2.4 3.7v3h3.9c2.3-2.1 3.5-5.2 3.5-8.5z"/>
+              <path fill="#34A853" d="M12 24c3.2 0 5.9-1 7.8-2.7l-3.9-3c-1 .7-2.3 1.2-3.9 1.2-3 0-5.6-2-6.5-4.8h-4v3.1C3.4 21.7 7.4 24 12 24z"/>
+              <path fill="#FBBC05" d="M5.5 14.7a7.2 7.2 0 0 1 0-5.4V6.2h-4A12 12 0 0 0 0 12c0 1.9.4 3.7 1.5 5.3l4-2.6z"/>
+              <path fill="#EA4335" d="M12 4.8c1.7 0 3.2.6 4.4 1.7l3.3-3.3C17.9 1.2 15.2 0 12 0 7.4 0 3.4 2.3 1.5 6.2l4 3.1C6.4 6.8 9 4.8 12 4.8z"/>
+            </svg>
+            Continue with Google
+          </a>
+          <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-slate-500">
+            <span className="h-px flex-1 bg-slate-800" />
+            Or use email
+            <span className="h-px flex-1 bg-slate-800" />
+          </div>
         </div>
 
         <form className="grid gap-4" onSubmit={submit}>

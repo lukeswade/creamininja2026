@@ -53,20 +53,28 @@ export default function CreateRecipe() {
 
   async function uploadPhoto(file: File, opts?: { forAi?: boolean }) {
     setErr(null);
-    const presign = await api<{ ok: true; key: string; url: string; headers: Record<string, string> }>("/uploads/presign", {
-      method: "POST",
-      body: JSON.stringify({ kind: "recipe", contentType: file.type, bytes: file.size }),
-      csrf: csrfToken || ""
-    });
+    try {
+      const presign = await api<{ ok: true; key: string; url: string; headers: Record<string, string> }>("/uploads/presign", {
+        method: "POST",
+        body: JSON.stringify({ kind: "recipe", contentType: file.type, bytes: file.size }),
+        csrf: csrfToken || ""
+      });
 
-    await fetch(presign.url, {
-      method: "PUT",
-      headers: presign.headers,
-      body: file
-    });
+      const putRes = await fetch(presign.url, {
+        method: "PUT",
+        headers: presign.headers,
+        body: file
+      });
 
-    if (opts?.forAi) setAiPhotoKey(presign.key);
-    else setImageKey(presign.key);
+      if (!putRes.ok) {
+        throw new Error("Upload failed. Please try a smaller photo or re-upload.");
+      }
+
+      if (opts?.forAi) setAiPhotoKey(presign.key);
+      else setImageKey(presign.key);
+    } catch (e: any) {
+      setErr(e.message || "Upload failed.");
+    }
   }
 
   async function create() {

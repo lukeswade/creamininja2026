@@ -10,6 +10,8 @@ export type Env = {
   TURNSTILE_SECRET_KEY: string;
   //OPENAI_API_KEY: string;
   GEMINI_API_KEY: string;
+  GOOGLE_CLIENT_ID: string;
+  GOOGLE_CLIENT_SECRET: string;
 };
 
 export const isProd = (env: Env) => env.ENV === "prod";

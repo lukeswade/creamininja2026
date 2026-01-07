@@ -80,10 +80,10 @@ export default function Feed() {
 
       {/* Tabs and filters */}
       <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setTab("popular")}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
+            className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition sm:px-4 sm:py-2 sm:text-sm ${
               tab === "popular"
                 ? "bg-violet-600 text-white"
                 : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
@@ -95,7 +95,7 @@ export default function Feed() {
           <button
             onClick={() => setTab("network")}
             disabled={!user}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
+            className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition sm:px-4 sm:py-2 sm:text-sm ${
               tab === "network"
                 ? "bg-violet-600 text-white"
                 : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -111,7 +111,7 @@ export default function Feed() {
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {/* Sort dropdown */}
           <div className="relative">
             <button
@@ -152,12 +152,12 @@ export default function Feed() {
           </div>
 
           {/* Time window filter */}
-          <div className="flex items-center gap-1 rounded-lg bg-slate-900/50 p-1">
+          <div className="flex flex-wrap items-center gap-1 rounded-lg bg-slate-900/50 p-1">
             {(["day", "week", "month", "all"] as const).map((w) => (
               <button
                 key={w}
                 onClick={() => setWindow(w)}
-                className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                className={`rounded-md px-2 py-1 text-xs font-medium transition sm:px-3 sm:py-1.5 ${
                   window === w
                     ? "bg-slate-700 text-white"
                     : "text-slate-400 hover:text-slate-200"

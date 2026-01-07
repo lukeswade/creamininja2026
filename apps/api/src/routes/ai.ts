@@ -28,8 +28,8 @@ const RecipeSchema = z.object({
   title: z.string().min(1).max(120),
   category: z.string().min(1).max(40),
   description: z.string().max(1000).optional(),
-  ingredients: z.array(z.string().min(1).max(160)).min(1).max(60),
-  steps: z.array(z.string().min(1).max(400)).min(1).max(25),
+  ingredients: z.array(z.string().min(1).max(160)).min(3).max(14),
+  steps: z.array(z.string().min(1).max(400)).min(3).max(10),
   notes: z.array(z.string().min(1).max(200)).max(10).optional(),
   allergens: z.array(z.string().min(1).max(40)).max(10).optional()
 });
@@ -50,11 +50,12 @@ Return ONLY valid JSON matching this schema:
   "title": string (3-120 chars),
   "category": string (2-40 chars),
   "description": string (optional, max 1000 chars),
-  "ingredients": string[] (3-60 items),
-  "steps": string[] (3-25 items),
+  "ingredients": string[] (3-14 items),
+  "steps": string[] (3-10 items),
   "notes": string[] (optional, max 10 items),
   "allergens": string[] (optional, max 10 items)
 }
+Keep it simple and short: aim for 5-10 ingredients and 4-7 steps.
 Include clear CREAMi-specific instructions (freeze time, respin notes, mix-ins). Avoid unsafe food advice.`;
 
   const userPrompt = `Create a ${body.category} CREAMi recipe using these ingredients: ${body.ingredients.join(", ")}.
@@ -102,13 +103,13 @@ Return ONLY valid JSON matching this schema:
   "title": string (3-120 chars),
   "category": string (2-40 chars),
   "description": string (optional, max 1000 chars),
-  "ingredients": string[] (3-60 items),
-  "steps": string[] (3-25 items),
+  "ingredients": string[] (3-14 items),
+  "steps": string[] (3-10 items),
   "notes": string[] (optional, max 10 items),
   "allergens": string[] (optional, max 10 items)
 }
 First infer reasonable ingredients from the image; then propose a recipe in the requested category.
-Avoid unsafe food advice.`;
+Keep it simple and short: aim for 5-10 ingredients and 4-7 steps. Avoid unsafe food advice.`;
 
   const userPrompt = `Generate a ${category} CREAMi recipe based on this photo of ingredients.`;
 
@@ -166,12 +167,12 @@ Return ONLY valid JSON matching this schema:
   "title": string (3-120 chars, creative and fun),
   "category": string (2-40 chars),
   "description": string (optional, max 1000 chars),
-  "ingredients": string[] (3-60 items with quantities),
-  "steps": string[] (3-25 items),
+  "ingredients": string[] (3-14 items with quantities),
+  "steps": string[] (3-10 items),
   "notes": string[] (optional, max 10 items),
   "allergens": string[] (optional, max 10 items)
 }
-Include clear CREAMi-specific instructions (freeze time, respin notes, mix-ins). Be creative and fun!`;
+Keep it simple and short: aim for 5-10 ingredients and 4-7 steps. Include clear CREAMi-specific instructions (freeze time, respin notes, mix-ins). Be creative and fun!`;
 
   const userPrompt = `Create an amazing ${category} CREAMi recipe with the theme: "${theme}". 
 Be creative with the name and ingredients! Make it sound delicious and fun.`;
