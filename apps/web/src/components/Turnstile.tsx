@@ -63,7 +63,9 @@ export function Turnstile({
             onToken("");
             try {
               window.turnstile?.reset(widgetId.current || undefined);
-            } catch {}
+            } catch {
+              // Ignore reset errors
+            }
           }
         });
       } catch (e: any) {

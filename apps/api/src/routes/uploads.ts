@@ -47,9 +47,9 @@ router.post("/presign", zValidator("json", PresignSchema), async (c) => {
   // - R2_ENDPOINT (var) e.g. https://<accountid>.r2.cloudflarestorage.com
   //
   // If you prefer not to use presigned URLs, you can implement multipart upload through the Worker instead.
-  const endpoint = (c.env as any).R2_ENDPOINT as string | undefined;
-  const accessKeyId = (c.env as any).R2_ACCESS_KEY_ID as string | undefined;
-  const secretAccessKey = (c.env as any).R2_SECRET_ACCESS_KEY as string | undefined;
+  const endpoint = c.env.R2_ENDPOINT;
+  const accessKeyId = c.env.R2_ACCESS_KEY_ID;
+  const secretAccessKey = c.env.R2_SECRET_ACCESS_KEY;
 
   if (!endpoint || !accessKeyId || !secretAccessKey) {
     return c.json(
@@ -60,7 +60,7 @@ router.post("/presign", zValidator("json", PresignSchema), async (c) => {
     );
   }
 
-  const bucket = (c.env as any).R2_BUCKET_NAME || "creamininja-uploads";
+  const bucket = c.env.R2_BUCKET_NAME || "creamininja-uploads";
   const url = new URL(`${endpoint.replace(/\/$/, "")}/${bucket}/${key}`);
 
   const client = new AwsClient({

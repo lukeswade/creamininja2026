@@ -8,7 +8,7 @@ This repo is a **Cloudflare-native** full-stack PWA:
 - **Auth:** email+password + server-side sessions (httpOnly cookie) + CSRF
 - **Social:** friend requests (“Ninjagos”), friends list, private/restricted/public recipes, explicit sharing
 - **Feed:** network + popular (day/week/month/all)
-- **AI:** recipe generation from ingredient list or photo (OpenAI Responses API; provider abstraction)
+- **AI:** recipe generation from ingredient list or photo (Gemini 2.5 Flash API; provider abstraction)
 
 > Domain plan: `creamininja.com` (Pages) and `api.creamininja.com` (Worker).
 
@@ -31,6 +31,11 @@ npm i -g pnpm wrangler
 ```bash
 cd apps/api
 pnpm i
+
+# Configure local secrets
+cp .dev.vars.example .dev.vars
+# Edit .dev.vars and add your GEMINI_API_KEY and R2 credentials
+
 # create a local D1 db and apply migrations
 pnpm db:local:setup
 
@@ -44,10 +49,11 @@ pnpm dev
 cd apps/web
 pnpm i
 cp .env.example .env
+# Edit .env if needed (defaults should work for local dev)
 pnpm dev
 ```
 
-For local development, you can leave `VITE_TURNSTILE_SITE_KEY` empty and set `TURNSTILE_BYPASS=true` in the API.
+For local development, you can leave `VITE_TURNSTILE_SITE_KEY` empty and set `TURNSTILE_BYPASS=true` in the API `.dev.vars` file.
 
 Frontend defaults to `http://localhost:5173` and calls the API at `http://localhost:8787`.
 
@@ -75,8 +81,19 @@ pnpm db:seed:remote
 ```bash
 wrangler secret put SESSION_SIGNING_SECRET
 wrangler secret put TURNSTILE_SECRET_KEY
-wrangler secret put OPENAI_API_KEY
+wrangler secret put GEMINI_API_KEY
+wrangler secret put R2_ACCESS_KEY_ID
+wrangler secret put R2_SECRET_ACCESS_KEY
 ```
+
+> **Note on R2 credentials:** To enable photo uploads via presigned URLs, you need to create R2 API tokens:
+> 1. In Cloudflare Dashboard → R2 → Manage R2 API Tokens
+> 2. Create a new API token with read/write permissions for your bucket
+> 3. Copy the Access Key ID and Secret Access Key
+> 4. Set them as secrets using the commands above
+> 5. The R2_ENDPOINT is already configured in `wrangler.toml`
+
+> **Note on Gemini API:** Get your API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
 
 > You can skip Turnstile at first by setting `TURNSTILE_BYPASS=true` in `wrangler.toml` (development only).
 
@@ -117,3 +134,18 @@ Then add your domain:
 - `apps/api` — Workers API + D1 schema/migrations
 - `apps/web` — PWA UI
 
+
+---
+
+## Photo Uploads & AI Generation
+
+This app includes:
+- **Photo uploads** via Cloudflare R2 with presigned URLs (recipe photos + user avatars)
+- **AI recipe generation** powered by Gemini 2.5 Flash
+  - Generate from ingredient list
+  - Generate from photo of ingredients
+  - "Surprise Me" random creative recipes
+
+📖 **Detailed guides:**
+- [Photo Upload & AI Generation Guide](./PHOTO_UPLOAD_AI_GUIDE.md) - Architecture and API reference
+- [Manual Testing Guide](./TESTING_GUIDE.md) - Step-by-step testing instructions
