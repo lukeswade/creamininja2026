@@ -49,6 +49,12 @@ export default [
     }
   },
   {
-    ignores: ["vite.config.ts"]
+    ignores: [
+      "vite.config.ts",
+      "postcss.config.js",
+      "tailwind.config.js",
+      "dist/**",
+      "build/**"
+    ]
   }
 ];
