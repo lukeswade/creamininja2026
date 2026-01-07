@@ -103,7 +103,9 @@ pnpm db:seed:local     # Optional: Add demo data
 
 # Web setup
 cd apps/web
-# Configure environment variables in .env if needed (VITE_API_BASE, VITE_TURNSTILE_SITE_KEY)
+# Optional: Create .env to override defaults
+# VITE_API_BASE defaults to http://localhost:8787
+# VITE_TURNSTILE_SITE_KEY is optional for local dev (API can bypass with TURNSTILE_BYPASS=true)
 ```
 
 ### Running Locally
