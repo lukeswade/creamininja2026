@@ -27,11 +27,11 @@ router.use(
 const RecipeSchema = z.object({
   title: z.string().min(1).max(120),
   category: z.string().min(1).max(40),
-  description: z.string().max(1000).optional(),
-  ingredients: z.array(z.string().min(1).max(160)).min(3).max(14),
-  steps: z.array(z.string().min(1).max(400)).min(3).max(10),
-  notes: z.array(z.string().min(1).max(200)).max(10).optional(),
-  allergens: z.array(z.string().min(1).max(40)).max(10).optional()
+  description: z.string().max(280).optional(),
+  ingredients: z.array(z.string().min(1).max(120)).min(3).max(6),
+  steps: z.array(z.string().min(1).max(280)).min(3).max(5),
+  notes: z.array(z.string().min(1).max(160)).max(5).optional(),
+  allergens: z.array(z.string().min(1).max(40)).max(5).optional()
 });
 
 const GenFromIngredients = z.object({
@@ -49,13 +49,13 @@ Return ONLY valid JSON matching this schema:
 {
   "title": string (3-120 chars),
   "category": string (2-40 chars),
-  "description": string (optional, max 1000 chars),
-  "ingredients": string[] (3-14 items),
-  "steps": string[] (3-10 items),
-  "notes": string[] (optional, max 10 items),
-  "allergens": string[] (optional, max 10 items)
+  "description": string (optional, max 280 chars),
+  "ingredients": string[] (3-6 items),
+  "steps": string[] (3-5 items),
+  "notes": string[] (optional, max 5 items),
+  "allergens": string[] (optional, max 5 items)
 }
-Keep it simple and short: aim for 5-10 ingredients and 4-7 steps.
+Ultra-simple: 3-6 ingredients, 3-5 steps. Keep language short.
 Include clear CREAMi-specific instructions (freeze time, respin notes, mix-ins). Avoid unsafe food advice.`;
 
   const userPrompt = `Create a ${body.category} CREAMi recipe using these ingredients: ${body.ingredients.join(", ")}.
@@ -66,7 +66,9 @@ Creativity level: ${body.creativity}.`;
     const recipe = await geminiGenerateJSON<any>({
       apiKey: c.env.GEMINI_API_KEY,
       system,
-      user: userPrompt
+      user: userPrompt,
+      maxOutputTokens: 500,
+      temperature: 0.6
     });
 
     const parsed = RecipeSchema.safeParse(recipe);
@@ -102,14 +104,14 @@ Return ONLY valid JSON matching this schema:
 {
   "title": string (3-120 chars),
   "category": string (2-40 chars),
-  "description": string (optional, max 1000 chars),
-  "ingredients": string[] (3-14 items),
-  "steps": string[] (3-10 items),
-  "notes": string[] (optional, max 10 items),
-  "allergens": string[] (optional, max 10 items)
+  "description": string (optional, max 280 chars),
+  "ingredients": string[] (3-6 items),
+  "steps": string[] (3-5 items),
+  "notes": string[] (optional, max 5 items),
+  "allergens": string[] (optional, max 5 items)
 }
 First infer reasonable ingredients from the image; then propose a recipe in the requested category.
-Keep it simple and short: aim for 5-10 ingredients and 4-7 steps. Avoid unsafe food advice.`;
+Ultra-simple: 3-6 ingredients, 3-5 steps. Keep language short. Avoid unsafe food advice.`;
 
   const userPrompt = `Generate a ${category} CREAMi recipe based on this photo of ingredients.`;
 
@@ -118,7 +120,9 @@ Keep it simple and short: aim for 5-10 ingredients and 4-7 steps. Avoid unsafe f
       apiKey: c.env.GEMINI_API_KEY,
       system,
       user: userPrompt,
-      image: { mimeType: contentType, base64: b64 }
+      image: { mimeType: contentType, base64: b64 },
+      maxOutputTokens: 500,
+      temperature: 0.6
     });
 
     const parsed = RecipeSchema.safeParse(recipe);
@@ -166,13 +170,13 @@ Return ONLY valid JSON matching this schema:
 {
   "title": string (3-120 chars, creative and fun),
   "category": string (2-40 chars),
-  "description": string (optional, max 1000 chars),
-  "ingredients": string[] (3-14 items with quantities),
-  "steps": string[] (3-10 items),
-  "notes": string[] (optional, max 10 items),
-  "allergens": string[] (optional, max 10 items)
+  "description": string (optional, max 280 chars),
+  "ingredients": string[] (3-6 items with quantities),
+  "steps": string[] (3-5 items),
+  "notes": string[] (optional, max 5 items),
+  "allergens": string[] (optional, max 5 items)
 }
-Keep it simple and short: aim for 5-10 ingredients and 4-7 steps. Include clear CREAMi-specific instructions (freeze time, respin notes, mix-ins). Be creative and fun!`;
+Ultra-simple: 3-6 ingredients, 3-5 steps. Keep language short. Include clear CREAMi-specific instructions (freeze time, respin notes, mix-ins). Be creative and fun!`;
 
   const userPrompt = `Create an amazing ${category} CREAMi recipe with the theme: "${theme}". 
 Be creative with the name and ingredients! Make it sound delicious and fun.`;
@@ -181,7 +185,9 @@ Be creative with the name and ingredients! Make it sound delicious and fun.`;
     const recipe = await geminiGenerateJSON<any>({
       apiKey: c.env.GEMINI_API_KEY,
       system,
-      user: userPrompt
+      user: userPrompt,
+      maxOutputTokens: 450,
+      temperature: 0.65
     });
 
     const parsed = RecipeSchema.safeParse(recipe);

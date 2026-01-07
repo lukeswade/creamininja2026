@@ -109,105 +109,110 @@ router.get("/google", async (c) => {
 });
 
 router.get("/google/callback", async (c) => {
-  const code = c.req.query("code");
-  const state = c.req.query("state");
-  const stateCookie = readCookie(c.req, OAUTH_STATE_COOKIE);
+  try {
+    const code = c.req.query("code");
+    const state = c.req.query("state");
+  const stateCookie = readCookie(c.req.header("cookie") || "", OAUTH_STATE_COOKIE);
 
-  if (!code || !state || !stateCookie || stateCookie !== state) {
-    return c.json(unauthorized("Invalid OAuth state"), 401);
-  }
+    if (!code || !state || !stateCookie || stateCookie !== state) {
+      return c.json(unauthorized("Invalid OAuth state"), 401);
+    }
 
-  const clientId = c.env.GOOGLE_CLIENT_ID;
-  const clientSecret = c.env.GOOGLE_CLIENT_SECRET;
-  if (!clientId || !clientSecret) {
-    return c.json(badRequest("Google OAuth is not configured."), 400);
-  }
+    const clientId = c.env.GOOGLE_CLIENT_ID;
+    const clientSecret = c.env.GOOGLE_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+      return c.json(badRequest("Google OAuth is not configured."), 400);
+    }
 
-  const redirectUri = `${new URL(c.req.url).origin}/auth/google/callback`;
-  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      code,
-      client_id: clientId,
-      client_secret: clientSecret,
-      redirect_uri: redirectUri,
-      grant_type: "authorization_code"
-    })
-  });
+    const redirectUri = `${new URL(c.req.url).origin}/auth/google/callback`;
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code"
+      })
+    });
 
-  if (!tokenRes.ok) {
-    return c.json(badRequest("Google OAuth failed."), 400);
-  }
+    if (!tokenRes.ok) {
+      return c.json(badRequest("Google OAuth failed."), 400);
+    }
 
-  const tokenData = (await tokenRes.json()) as { access_token?: string };
-  if (!tokenData.access_token) return c.json(badRequest("Google OAuth failed."), 400);
+    const tokenData = (await tokenRes.json()) as { access_token?: string };
+    if (!tokenData.access_token) return c.json(badRequest("Google OAuth failed."), 400);
 
-  const profileRes = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
-    headers: { Authorization: `Bearer ${tokenData.access_token}` }
-  });
-  if (!profileRes.ok) return c.json(badRequest("Google profile fetch failed."), 400);
+    const profileRes = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` }
+    });
+    if (!profileRes.ok) return c.json(badRequest("Google profile fetch failed."), 400);
 
-  const profile = (await profileRes.json()) as {
-    sub?: string;
-    email?: string;
-    email_verified?: boolean;
-    name?: string;
-  };
+    const profile = (await profileRes.json()) as {
+      sub?: string;
+      email?: string;
+      email_verified?: boolean;
+      name?: string;
+    };
 
-  if (!profile.sub || !profile.email) {
-    return c.json(badRequest("Google profile missing required fields."), 400);
-  }
-  if (profile.email_verified === false) {
-    return c.json(badRequest("Google account email is not verified."), 400);
-  }
+    if (!profile.sub || !profile.email) {
+      return c.json(badRequest("Google profile missing required fields."), 400);
+    }
+    if (profile.email_verified === false) {
+      return c.json(badRequest("Google account email is not verified."), 400);
+    }
 
-  const email = profile.email.toLowerCase();
-  let userId: string | null = null;
+    const email = profile.email.toLowerCase();
+    let userId: string | null = null;
 
-  const existingOauth = await first<{ user_id: string }>(
-    c.env,
-    "SELECT user_id FROM oauth_accounts WHERE provider = ? AND provider_user_id = ?",
-    ["google", profile.sub]
-  );
-  if (existingOauth) userId = existingOauth.user_id;
+    const existingOauth = await first<{ user_id: string }>(
+      c.env,
+      "SELECT user_id FROM oauth_accounts WHERE provider = ? AND provider_user_id = ?",
+      ["google", profile.sub]
+    );
+    if (existingOauth) userId = existingOauth.user_id;
 
-  if (!userId) {
-    const existingUser = await first<{ id: string }>(c.env, "SELECT id FROM users WHERE email = ?", [email]);
-    if (existingUser) {
-      userId = existingUser.id;
-    } else {
-      const handleBase = normalizeHandle(email);
-      const handle = await uniqueHandle(c.env, handleBase);
-      const passwordHash = await hashPassword(randomToken(20));
-      userId = newId("usr");
+    if (!userId) {
+      const existingUser = await first<{ id: string }>(c.env, "SELECT id FROM users WHERE email = ?", [email]);
+      if (existingUser) {
+        userId = existingUser.id;
+      } else {
+        const handleBase = normalizeHandle(email);
+        const handle = await uniqueHandle(c.env, handleBase);
+        const passwordHash = await hashPassword(randomToken(20));
+        userId = newId("usr");
+        await run(
+          c.env,
+          "INSERT INTO users (id, email, password_hash, display_name, handle) VALUES (?, ?, ?, ?, ?)",
+          [userId, email, passwordHash, profile.name || handle, handle]
+        );
+      }
+
       await run(
         c.env,
-        "INSERT INTO users (id, email, password_hash, display_name, handle) VALUES (?, ?, ?, ?, ?)",
-        [userId, email, passwordHash, profile.name || handle, handle]
+        "INSERT INTO oauth_accounts (id, provider, provider_user_id, user_id, email) VALUES (?, ?, ?, ?, ?)",
+        [newId("oauth"), "google", profile.sub, userId, email]
       );
     }
 
-    await run(
-      c.env,
-      "INSERT INTO oauth_accounts (id, provider, provider_user_id, user_id, email) VALUES (?, ?, ?, ?, ?)",
-      [newId("oauth"), "google", profile.sub, userId, email]
-    );
+    if (!userId) return c.json(badRequest("Google sign-in failed."), 400);
+
+    const session = await createSession(c.env, userId);
+    const setCookie = serializeCookie("cn_session", session.token, cookieOpts(c.env));
+    const csrfCookie = serializeCookie("cn_csrf", session.csrfToken, { ...cookieOpts(c.env), httpOnly: false });
+    const clearState = serializeCookie(OAUTH_STATE_COOKIE, "", { ...cookieOpts(c.env), httpOnly: true, maxAge: 0 });
+
+    const dest = new URL("/feed", c.env.APP_ORIGIN).toString();
+    const headers = new Headers({ Location: dest });
+    headers.append("Set-Cookie", setCookie);
+    headers.append("Set-Cookie", csrfCookie);
+    headers.append("Set-Cookie", clearState);
+    return new Response(null, { status: 302, headers });
+  } catch (err: any) {
+    console.error("google_oauth_callback_error", err);
+    return c.json(badRequest(err?.message || "Google OAuth failed."), 400);
   }
-
-  if (!userId) return c.json(badRequest("Google sign-in failed."), 400);
-
-  const session = await createSession(c.env, userId);
-  const setCookie = serializeCookie("cn_session", session.token, cookieOpts(c.env));
-  const csrfCookie = serializeCookie("cn_csrf", session.csrfToken, { ...cookieOpts(c.env), httpOnly: false });
-  const clearState = serializeCookie(OAUTH_STATE_COOKIE, "", { ...cookieOpts(c.env), httpOnly: true, maxAge: 0 });
-
-  const dest = new URL("/feed", c.env.APP_ORIGIN).toString();
-  const headers = new Headers({ Location: dest });
-  headers.append("Set-Cookie", setCookie);
-  headers.append("Set-Cookie", csrfCookie);
-  headers.append("Set-Cookie", clearState);
-  return new Response(null, { status: 302, headers });
 });
 
 router.post("/logout", authOptional, requireAuth, requireCsrf, async (c) => {
@@ -248,8 +253,8 @@ async function createSession(env: Env, userId: string) {
   return { id: sessionId, token, csrfToken, expiresAt };
 }
 
-function readCookie(req: Request, name: string) {
-  const cookies = (req.headers.get("cookie") || "").split(";").map((x) => x.trim());
+function readCookie(rawCookie: string, name: string) {
+  const cookies = rawCookie.split(";").map((x) => x.trim());
   const hit = cookies.find((c) => c.startsWith(`${name}=`));
   return hit ? decodeURIComponent(hit.split("=")[1]) : null;
 }

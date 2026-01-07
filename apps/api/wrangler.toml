@@ -18,6 +18,7 @@ APP_ORIGIN = "https://creamininja.com"
 COOKIE_DOMAIN = "creamininja.com"
 TURNSTILE_BYPASS = false
 GOOGLE_CLIENT_ID = "426406689881-klvm84l1jarpd7ujc0fv8plkagm2thgo.apps.googleusercontent.com"
+R2_ENDPOINT = "https://9a717b6aba89972f4b1be25a31b29220.r2.cloudflarestorage.com"
 
 # Secrets to set via wrangler secret put:
 # - SESSION_SIGNING_SECRET

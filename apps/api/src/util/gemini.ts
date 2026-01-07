@@ -6,6 +6,9 @@ export type GeminiGenerateArgs = {
   user: string;
   // Optional image bytes as base64 (no data: prefix)
   image?: { mimeType: string; base64: string };
+  maxOutputTokens?: number;
+  temperature?: number;
+  topP?: number;
 };
 
 function stripJsonFence(s: string) {
@@ -15,6 +18,13 @@ function stripJsonFence(s: string) {
     .replace(/^```\s*/i, "")
     .replace(/```$/i, "")
     .trim();
+}
+
+function extractJsonBlock(s: string) {
+  const start = s.indexOf("{");
+  const end = s.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return null;
+  return s.slice(start, end + 1);
 }
 
 export async function geminiGenerateJSON<T>(args: GeminiGenerateArgs): Promise<T> {
@@ -38,9 +48,9 @@ export async function geminiGenerateJSON<T>(args: GeminiGenerateArgs): Promise<T
   const body: any = {
     contents: [{ role: "user", parts }],
     generationConfig: {
-      temperature: 0.8,
-      topP: 0.95,
-      maxOutputTokens: 2048,
+      temperature: args.temperature ?? 0.7,
+      topP: args.topP ?? 0.9,
+      maxOutputTokens: args.maxOutputTokens ?? 800,
     },
   };
 
@@ -71,6 +81,12 @@ export async function geminiGenerateJSON<T>(args: GeminiGenerateArgs): Promise<T
   try {
     return JSON.parse(cleaned) as T;
   } catch (e) {
+    const extracted = extractJsonBlock(cleaned);
+    if (extracted) {
+      try {
+        return JSON.parse(extracted) as T;
+      } catch {}
+    }
     throw new Error(`Invalid JSON from AI: ${cleaned.slice(0, 200)}...`);
   }
 }
