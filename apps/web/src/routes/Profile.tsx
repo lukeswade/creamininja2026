@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -28,7 +28,6 @@ type ProfileResp = {
 export default function Profile() {
   const { handle } = useParams<{ handle: string }>();
   const { user: me } = useAuth();
-  const nav = useNavigate();
   const qc = useQueryClient();
   const [busy, setBusy] = React.useState(false);
 

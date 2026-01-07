@@ -80,12 +80,14 @@ export async function geminiGenerateJSON<T>(args: GeminiGenerateArgs): Promise<T
   
   try {
     return JSON.parse(cleaned) as T;
-  } catch (e) {
+  } catch {
     const extracted = extractJsonBlock(cleaned);
     if (extracted) {
       try {
         return JSON.parse(extracted) as T;
-      } catch {}
+      } catch {
+        // Fallthrough to error below
+      }
     }
     throw new Error(`Invalid JSON from AI: ${cleaned.slice(0, 200)}...`);
   }

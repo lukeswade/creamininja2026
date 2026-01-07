@@ -20,7 +20,7 @@ const sortConfig: Record<SortMode, { icon: typeof Star; label: string; descripti
 };
 
 export default function Gallery() {
-  const { user, csrfToken } = useAuth();
+  const { user } = useAuth();
   const qc = useQueryClient();
   const [tab, setTab] = React.useState<"network" | "popular">("popular");
   const [window, setWindow] = React.useState<"day" | "week" | "month" | "all">("week");

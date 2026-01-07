@@ -8,7 +8,7 @@ This repo is a **Cloudflare-native** full-stack PWA:
 - **Auth:** email+password + server-side sessions (httpOnly cookie) + CSRF
 - **Social:** friend requests (“Ninjagos”), friends list, private/restricted/public recipes, explicit sharing
 - **Feed:** network + popular (day/week/month/all)
-- **AI:** recipe generation from ingredient list or photo (OpenAI Responses API; provider abstraction)
+- **AI:** recipe generation from ingredient list or photo (Gemini 2.5 Flash API; provider abstraction)
 
 > Domain plan: `creamininja.com` (Pages) and `api.creamininja.com` (Worker).
 
@@ -75,8 +75,19 @@ pnpm db:seed:remote
 ```bash
 wrangler secret put SESSION_SIGNING_SECRET
 wrangler secret put TURNSTILE_SECRET_KEY
-wrangler secret put OPENAI_API_KEY
+wrangler secret put GEMINI_API_KEY
+wrangler secret put R2_ACCESS_KEY_ID
+wrangler secret put R2_SECRET_ACCESS_KEY
 ```
+
+> **Note on R2 credentials:** To enable photo uploads via presigned URLs, you need to create R2 API tokens:
+> 1. In Cloudflare Dashboard → R2 → Manage R2 API Tokens
+> 2. Create a new API token with read/write permissions for your bucket
+> 3. Copy the Access Key ID and Secret Access Key
+> 4. Set them as secrets using the commands above
+> 5. The R2_ENDPOINT is already configured in `wrangler.toml`
+
+> **Note on Gemini API:** Get your API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
 
 > You can skip Turnstile at first by setting `TURNSTILE_BYPASS=true` in `wrangler.toml` (development only).
 
