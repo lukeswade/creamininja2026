@@ -31,6 +31,11 @@ npm i -g pnpm wrangler
 ```bash
 cd apps/api
 pnpm i
+
+# Configure local secrets
+cp .dev.vars.example .dev.vars
+# Edit .dev.vars and add your GEMINI_API_KEY and R2 credentials
+
 # create a local D1 db and apply migrations
 pnpm db:local:setup
 
@@ -44,10 +49,11 @@ pnpm dev
 cd apps/web
 pnpm i
 cp .env.example .env
+# Edit .env if needed (defaults should work for local dev)
 pnpm dev
 ```
 
-For local development, you can leave `VITE_TURNSTILE_SITE_KEY` empty and set `TURNSTILE_BYPASS=true` in the API.
+For local development, you can leave `VITE_TURNSTILE_SITE_KEY` empty and set `TURNSTILE_BYPASS=true` in the API `.dev.vars` file.
 
 Frontend defaults to `http://localhost:5173` and calls the API at `http://localhost:8787`.
 
@@ -128,3 +134,18 @@ Then add your domain:
 - `apps/api` — Workers API + D1 schema/migrations
 - `apps/web` — PWA UI
 
+
+---
+
+## Photo Uploads & AI Generation
+
+This app includes:
+- **Photo uploads** via Cloudflare R2 with presigned URLs (recipe photos + user avatars)
+- **AI recipe generation** powered by Gemini 2.5 Flash
+  - Generate from ingredient list
+  - Generate from photo of ingredients
+  - "Surprise Me" random creative recipes
+
+📖 **Detailed guides:**
+- [Photo Upload & AI Generation Guide](./PHOTO_UPLOAD_AI_GUIDE.md) - Architecture and API reference
+- [Manual Testing Guide](./TESTING_GUIDE.md) - Step-by-step testing instructions
