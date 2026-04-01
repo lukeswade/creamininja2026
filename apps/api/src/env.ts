@@ -12,6 +12,7 @@ export type Env = {
   GEMINI_API_KEY: string;
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
+  AI: any;
 };
 
 export const isProd = (env: Env) => env.ENV === "prod";

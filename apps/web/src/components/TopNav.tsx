@@ -5,6 +5,7 @@ import { useAuth } from "../lib/auth";
 import { api } from "../lib/api";
 import { Avatar } from "./Avatar";
 import { Home, Users, PlusCircle, LogOut, Menu, X, Image } from "lucide-react";
+import { motion } from "framer-motion";
 
 export function TopNav() {
   const { user, csrfToken, setAuth } = useAuth();
@@ -15,20 +16,6 @@ export function TopNav() {
     setAuth(null, null);
     nav("/login");
   }
-
-  const linkClass = (isActive: boolean) =>
-    `flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
-      isActive
-        ? "bg-slate-800 text-white"
-        : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
-    }`;
-
-  const mobileLinkClass = (isActive: boolean) =>
-    `flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium transition ${
-      isActive
-        ? "bg-slate-800 text-white"
-        : "text-slate-300 hover:bg-slate-800/50"
-    }`;
 
   return (
     <div className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/60 backdrop-blur-xl shadow-lg shadow-black/20">
@@ -44,26 +31,38 @@ export function TopNav() {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden items-center gap-1 md:flex">
-          <NavLink to="/feed" className={({ isActive }) => linkClass(isActive)}>
-            <Home className="h-4 w-4" />
-            Feed
-          </NavLink>
-          <NavLink to="/gallery" className={({ isActive }) => linkClass(isActive)}>
-            <Image className="h-4 w-4" />
-            Gallery
-          </NavLink>
+        <nav className="hidden items-center gap-2 md:flex">
+          {[
+            { to: "/feed", icon: Home, label: "Feed" },
+            { to: "/gallery", icon: Image, label: "Gallery" },
+            ...(user ? [{ to: "/friends", icon: Users, label: "Dojo" }] : []),
+          ].map(({ to, icon: Icon, label }) => (
+            <NavLink key={to} to={to} className="relative px-3 py-2 rounded-xl group focus:outline-none">
+              {({ isActive }) => (
+                <div className={`relative z-10 flex items-center gap-2 text-sm font-semibold transition-colors duration-200 ${isActive ? "text-violet-100" : "text-slate-400 group-hover:text-slate-200"}`}>
+                  <Icon className={`h-4 w-4 ${isActive ? "text-violet-400" : ""}`} />
+                  {label}
+                  {isActive && (
+                    <motion.div
+                      layoutId="topnav-indicator"
+                      className="absolute -inset-0 rounded-xl bg-violet-500/20 border border-violet-500/30 shadow-[0_0_15px_rgba(139,92,246,0.15)] -z-10"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    />
+                  )}
+                </div>
+              )}
+            </NavLink>
+          ))}
+          
           {user && (
-            <>
-              <NavLink to="/friends" className={({ isActive }) => linkClass(isActive)}>
-                <Users className="h-4 w-4" />
-                Dojo
-              </NavLink>
-              <NavLink to="/create" className={({ isActive }) => linkClass(isActive)}>
+            <div className="ml-2 pl-4 border-l border-white/10 hidden md:block">
+              <Button onClick={() => nav("/create")} className="h-9 px-4 text-sm font-bold gap-2 shadow-lg shadow-violet-500/20 active:scale-95 transition-all">
                 <PlusCircle className="h-4 w-4" />
-                Create
-              </NavLink>
-            </>
+                Create Recipe
+              </Button>
+            </div>
           )}
         </nav>
 

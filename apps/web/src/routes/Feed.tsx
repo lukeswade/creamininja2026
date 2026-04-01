@@ -207,9 +207,45 @@ export default function Feed() {
       {/* Feed content */}
       {!q.isLoading && !q.isError && (
         <div className="grid gap-4">
-          {(q.data?.items || []).map((r) => (
-            <RecipeCard key={r.id} r={r} onMutate={refetch} />
-          ))}
+          {(q.data?.items || []).map((r, idx) => {
+            const isPintOfTheWeek = tab === "popular" && window === "week" && sort === "stars" && idx === 0 && r.starsCount > 0;
+            return (
+              <React.Fragment key={r.id}>
+                {!user && tab === "popular" && idx === 1 && (
+                  <Card className="relative overflow-hidden my-2 border-violet-500/30 bg-gradient-to-br from-violet-900/40 to-slate-900 shadow-[0_0_30px_rgba(139,92,246,0.15)]">
+                    <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-fuchsia-600/20 blur-3xl mix-blend-screen pointer-events-none" />
+                    <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h2 className="flex items-center gap-2 text-xl font-black tracking-tight text-white md:text-2xl">
+                          <span className="text-2xl">✨</span> Architect the perfect pint
+                        </h2>
+                        <p className="mt-2 text-sm text-violet-200/80 md:text-base max-w-md">
+                          Join the Dojo to instantly generate CREAMi recipes from photos, wild ideas, or random cravings using Gemini AI.
+                        </p>
+                      </div>
+                      <Link to="/register" className="shrink-0">
+                        <Button className="w-full sm:w-auto shadow-xl shadow-fuchsia-500/20 bg-gradient-to-r from-violet-600 to-fuchsia-600 font-bold hover:shadow-fuchsia-500/40 border-0 active:scale-95 text-white py-3 px-6 rounded-xl">
+                          Create Free Account
+                        </Button>
+                      </Link>
+                    </div>
+                  </Card>
+                )}
+                <div className="relative">
+                  {isPintOfTheWeek && (
+                  <div className="mb-3 flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border border-amber-500/30 px-4 py-2.5 text-amber-400 font-bold shadow-[0_0_20px_rgba(245,158,11,0.15)]">
+                    <span className="text-xl">🏆</span> 
+                    <span>Pint of the Week</span>
+                    <span className="ml-auto text-xs font-semibold text-amber-500/80 uppercase tracking-widest">{r.starsCount} Stars</span>
+                  </div>
+                )}
+                <div className={isPintOfTheWeek ? "rounded-3xl p-[2px] bg-gradient-to-br from-amber-400/40 via-yellow-500/20 to-transparent shadow-xl shadow-amber-500/10" : ""}>
+                  <RecipeCard r={r} onMutate={refetch} />
+                </div>
+              </div>
+            </React.Fragment>
+            );
+          })}
           
           {/* Empty state */}
           {q.data?.items?.length === 0 && (

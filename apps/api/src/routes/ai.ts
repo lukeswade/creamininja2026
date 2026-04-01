@@ -38,13 +38,19 @@ const GenFromIngredients = z.object({
   ingredients: z.array(z.string().min(1).max(80)).min(1).max(80),
   category: z.string().min(2).max(40),
   dietary: z.array(z.string().min(1).max(40)).max(10).optional(),
-  creativity: z.enum(["safe", "balanced", "wild"]).default("balanced")
+  creativity: z.enum(["safe", "balanced", "wild"]).default("balanced"),
+  isDeluxe: z.boolean().optional().default(false)
 });
 
 router.post("/from-ingredients", zValidator("json", GenFromIngredients), async (c) => {
   const body = c.req.valid("json");
 
+  const deluxeInstruction = body.isDeluxe
+    ? "The user is using a Ninja CREAMi Deluxe (24oz pint). You MUST scale all ingredients and macros for a massive 24oz yield, and you may utilize Deluxe-exclusive processing modes (like FRAPPE, FROZEN DRINK, SLUSHI, ITALIAN ICE, or CREAMICCINO)."
+    : "The user is using a standard Ninja CREAMi (16oz pint). Keep ingredient measurements safely below the 16oz max fill line.";
+
   const system = `You are an expert Ninja CREAMi recipe developer and nutritionist.
+${deluxeInstruction}
 Return ONLY valid JSON matching this schema:
 {
   "title": string (3-120 chars, highly engaging),
@@ -66,7 +72,7 @@ Creativity level: ${body.creativity}.`;
       apiKey: c.env.GEMINI_API_KEY,
       system,
       user: userPrompt,
-      maxOutputTokens: 500,
+      maxOutputTokens: 1500,
       temperature: 0.6
     });
 
@@ -83,11 +89,12 @@ Creativity level: ${body.creativity}.`;
 
 const GenFromImage = z.object({
   imageKey: z.string().min(1).max(500),
-  category: z.string().min(2).max(40)
+  category: z.string().min(2).max(40),
+  isDeluxe: z.boolean().optional().default(false)
 });
 
 router.post("/from-image", zValidator("json", GenFromImage), async (c) => {
-  const { imageKey, category } = c.req.valid("json");
+  const { imageKey, category, isDeluxe } = c.req.valid("json");
 
   const obj = await c.env.UPLOADS.get(imageKey);
   if (!obj) return c.json(badRequest("Image not found. Upload first."), 400);
@@ -98,7 +105,12 @@ router.post("/from-image", zValidator("json", GenFromImage), async (c) => {
 
   const b64 = arrayBufferToBase64(bytes);
 
+  const deluxeInstruction = isDeluxe
+    ? "The user is using a Ninja CREAMi Deluxe (24oz pint). Scale ingredients for a 24oz yield. You can use Deluxe-exclusive processing modes like FRAPPE, FROZEN DRINK, SLUSHI, ITALIAN ICE, or CREAMICCINO."
+    : "The user is using a standard Ninja CREAMi (16oz pint). Keep ingredients scaled for a 16oz max fill line.";
+
   const system = `You are a visionary Ninja CREAMi recipe developer.
+${deluxeInstruction}
 Return ONLY valid JSON matching this schema:
 {
   "title": string (3-120 chars, engaging),
@@ -120,7 +132,7 @@ Keep language punchy. Include explicit CREAMi hardware instructions: e.g., "Free
       system,
       user: userPrompt,
       image: { mimeType: contentType, base64: b64 },
-      maxOutputTokens: 500,
+      maxOutputTokens: 1500,
       temperature: 0.6
     });
 
@@ -139,6 +151,53 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
   return btoa(binary);
 }
+
+const GenFromDescription = z.object({
+  description: z.string().min(3).max(300),
+  isDeluxe: z.boolean().optional().default(false)
+});
+
+router.post("/from-description", zValidator("json", GenFromDescription), async (c) => {
+  const { description, isDeluxe } = c.req.valid("json");
+
+  const deluxeInstruction = isDeluxe
+    ? "The user is using a Ninja CREAMi Deluxe (24oz pint). Scale ingredients for a 24oz yield. You can use Deluxe-exclusive processing modes like FRAPPE, FROZEN DRINK, SLUSHI, ITALIAN ICE, or CREAMICCINO."
+    : "The user is using a standard Ninja CREAMi (16oz pint). Keep ingredients scaled for a 16oz max capacity.";
+
+  const system = `You are a visionary Ninja CREAMi recipe developer and flavor architect.
+${deluxeInstruction}
+Return ONLY valid JSON matching this schema:
+{
+  "title": string (3-120 chars, creative, catchy),
+  "category": string (2-40 chars),
+  "description": string (Include approximate macros & calories per pint. Max 280 chars),
+  "ingredients": string[] (3-6 items with exact measurements),
+  "steps": string[] (3-5 items),
+  "notes": string[] (optional, max 5 items),
+  "allergens": string[] (optional, max 5 items)
+}
+Read the user's craving/idea. Architect the perfect CREAMi recipe for it. 
+Include explicit hardware instructions: 1) "Freeze base for 24 hours." 2) State the exact spin program (e.g., LITE ICE CREAM, SORBET). Avoid unsafe food advice.`;
+
+  const userPrompt = `Create an incredible CREAMi recipe based on this exact description or craving: "${description}".`;
+
+  try {
+    const recipe = await geminiGenerateJSON<any>({
+      apiKey: c.env.GEMINI_API_KEY,
+      system,
+      user: userPrompt,
+      maxOutputTokens: 1500,
+      temperature: 0.75
+    });
+
+    const parsed = RecipeSchema.safeParse(recipe);
+    if (!parsed.success) return c.json(badRequest("Model output did not match schema", parsed.error.flatten()), 400);
+
+    return c.json(jsonOk({ ok: true, recipe: parsed.data }));
+  } catch (err: any) {
+    return c.json(badRequest(err.message || "AI generation failed"), 400);
+  }
+});
 
 // Categories for random "Surprise Me" generation
 const SURPRISE_CATEGORIES = ["Protein Ice Cream", "Gourmet Gelato", "Fresh Sorbet", "Recovery Slushie", "Decadent Treat", "Keto Friendly Ice Cream"];
@@ -161,11 +220,22 @@ const SURPRISE_THEMES = [
   "lemon curd and shortbread crunch"
 ];
 
-router.post("/surprise", async (c) => {
+const SurpriseSchema = z.object({
+  isDeluxe: z.boolean().optional().default(false)
+});
+
+router.post("/surprise", zValidator("json", SurpriseSchema), async (c) => {
+  const { isDeluxe } = c.req.valid("json");
+  
   const category = SURPRISE_CATEGORIES[Math.floor(Math.random() * SURPRISE_CATEGORIES.length)];
   const theme = SURPRISE_THEMES[Math.floor(Math.random() * SURPRISE_THEMES.length)];
 
+  const deluxeInstruction = isDeluxe
+    ? "The user is using a Ninja CREAMi Deluxe (24oz pint). Scale ingredients for a 24oz yield. You can use Deluxe-exclusive processing modes like FRAPPE, FROZEN DRINK, SLUSHI, ITALIAN ICE, or CREAMICCINO."
+    : "The user is using a standard Ninja CREAMi (16oz pint). Keep ingredients scaled for a 16oz max capacity.";
+
   const system = `You are a viral TikTok Ninja CREAMi recipe developer and flavor architect.
+${deluxeInstruction}
 Return ONLY valid JSON matching this schema:
 {
   "title": string (3-120 chars, creative, catchy, and fun),
@@ -186,7 +256,7 @@ Be creative with the name and ingredients! Make it sound delicious and fun.`;
       apiKey: c.env.GEMINI_API_KEY,
       system,
       user: userPrompt,
-      maxOutputTokens: 600,
+      maxOutputTokens: 1500,
       temperature: 0.85
     });
 

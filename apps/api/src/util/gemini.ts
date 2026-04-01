@@ -50,7 +50,7 @@ export async function geminiGenerateJSON<T>(args: GeminiGenerateArgs): Promise<T
     generationConfig: {
       temperature: args.temperature ?? 0.7,
       topP: args.topP ?? 0.9,
-      maxOutputTokens: args.maxOutputTokens ?? 800,
+      maxOutputTokens: args.maxOutputTokens ?? 1500,
       responseMimeType: "application/json"
     },
   };

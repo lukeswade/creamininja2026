@@ -6,6 +6,7 @@ import { Modal } from "./Modal";
 import { Input } from "./Input";
 import { Button } from "./Button";
 import { Avatar } from "./Avatar";
+import { Copy } from "lucide-react";
 
 type Friend = { id: string; displayName: string; handle: string; avatarKey?: string | null };
 
@@ -51,6 +52,15 @@ export function ShareWithFriendsModal({
     setSharedIds((m) => ({ ...m, [userId]: true }));
   }
 
+  const [copied, setCopied] = React.useState(false);
+
+  function copyViralCaption() {
+    const caption = `Just made "${recipeTitle}" in the Ninja CREAMi! 🥷🍦 Snag the full recipe and macros natively here: https://creamininja.com/recipes/${recipeId} #ninjacreami #creamininja #proteindessert #healthyicecream`;
+    navigator.clipboard.writeText(caption);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   return (
     <Modal open={open} onClose={onClose} title="Share recipe">
       <div className="grid gap-3">
@@ -84,6 +94,13 @@ export function ShareWithFriendsModal({
           })}
 
           {!friends.isLoading && filtered.length === 0 && <div className="text-sm text-slate-400">No matches.</div>}
+        </div>
+
+        <div className="mt-2 border-t border-slate-800 pt-4">
+          <Button variant="secondary" onClick={copyViralCaption} className="w-full gap-2">
+            <Copy className="h-4 w-4" />
+            {copied ? "Copied to clipboard!" : "Copy Viral TikTok/IG Caption"}
+          </Button>
         </div>
       </div>
     </Modal>

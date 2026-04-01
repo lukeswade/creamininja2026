@@ -12,6 +12,9 @@ database_id = "a0d1477e-bf3f-472c-b65c-8d7583a19419"
 binding = "UPLOADS"
 bucket_name = "creamininja-uploads"
 
+[ai]
+binding = "AI"
+
 [vars]
 ENV = "prod"
 APP_ORIGIN = "https://creamininja.com"

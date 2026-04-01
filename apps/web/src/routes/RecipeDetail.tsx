@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api, API_BASE } from "../lib/api";
 import { Card } from "../components/Card";
@@ -41,6 +41,7 @@ const visibilityLabels = {
 
 export default function RecipeDetail() {
   const { id } = useParams();
+  const nav = useNavigate();
   const { user, csrfToken } = useAuth();
   const [shareOpen, setShareOpen] = React.useState(false);
   const [exporting, setExporting] = React.useState(false);
@@ -139,6 +140,9 @@ export default function RecipeDetail() {
     if (!exportRef.current || exporting || !r) return;
     setExporting(true);
     try {
+      // Prime the internal renderer cache to ensure fonts/layout are flushed before capturing 
+      await htmlToImage.toPng(exportRef.current, { cacheBust: true, pixelRatio: 1 });
+      
       const dataUrl = await htmlToImage.toPng(exportRef.current, { cacheBust: true, pixelRatio: 2 });
       const link = document.createElement("a");
       link.download = `CreamiNinja-${r.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.png`;
@@ -221,15 +225,14 @@ export default function RecipeDetail() {
             {/* Mobile-only Sticky Actions / Desktop Actions */}
             <div className="fixed bottom-24 right-4 z-40 flex flex-col gap-3 sm:static sm:flex-row sm:items-center">
               <button
-                onClick={user ? toggleStar : undefined}
-                disabled={!user}
+                onClick={user ? toggleStar : () => nav("/register")}
                 className={`group flex items-center gap-2 rounded-2xl px-5 py-3 transition-all active:scale-95 shadow-lg ${
                   r.viewerStarred
                     ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-violet-500/25"
-                    : "bg-slate-800/90 backdrop-blur-md text-slate-300 hover:bg-slate-700"
-                } ${!user ? "cursor-not-allowed opacity-50" : ""}`}
+                    : "bg-slate-800/90 backdrop-blur-md text-slate-300 hover:bg-slate-700 hover:text-white"
+                }`}
               >
-                <NinjaStar className={`h-6 w-6 ${r.viewerStarred ? "text-white" : "text-violet-400"}`} />
+                <NinjaStar className={`h-6 w-6 ${r.viewerStarred ? "text-white" : "text-violet-400 group-hover:text-violet-300 transition-colors"}`} />
                 <span className="font-bold">{r.starsCount}</span>
               </button>
               
@@ -267,14 +270,26 @@ export default function RecipeDetail() {
           {r.ingredients.length === 0 ? (
             <p className="mt-4 text-sm text-slate-500 italic">No ingredients listed</p>
           ) : (
-            <ul className="mt-4 space-y-2">
-              {r.ingredients.map((x, i) => (
-                <li key={i} className="flex items-start gap-3 text-slate-300">
-                  <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-500" />
-                  {x}
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="mt-4 space-y-2">
+                {r.ingredients.map((x, i) => (
+                  <li key={i} className="flex items-start gap-3 text-slate-300">
+                    <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-500" />
+                    {x}
+                  </li>
+                ))}
+              </ul>
+              
+              <a 
+                href={`https://www.amazon.com/s?k=${encodeURIComponent("Ninja Creami " + r.ingredients.slice(0, 3).join(" ").replace(/[0-9/.\-gcupstbspmloz]+ /gi, ''))}&tag=lukeswade-20`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 px-4 py-3 text-sm font-bold text-slate-200 transition-colors shadow-inner border border-white/5 active:scale-95"
+              >
+                <span className="text-amber-500 text-lg">🛒</span>
+                Shop Ingredients on Amazon
+              </a>
+            </>
           )}
         </Card>
 
@@ -313,9 +328,12 @@ export default function RecipeDetail() {
         />
       )}
 
-      {/* Hidden Export Node */}
-      <div className="fixed top-0 left-[-9999px] w-[600px] bg-slate-950 pointer-events-none p-8" ref={exportRef}>
-        <div className="bg-slate-900/60 rounded-3xl overflow-hidden border border-white/10 flex flex-col shadow-2xl">
+      {/* Hidden Export Node (rendered under the layout to prevent blank paints on Safari/Chrome) */}
+      <div 
+        ref={exportRef}
+        className="fixed top-0 left-0 -z-50 opacity-0 w-[600px] pointer-events-none p-8"
+      >
+        <div className="bg-slate-900/90 rounded-3xl overflow-hidden border border-white/10 flex flex-col shadow-2xl">
           {r.imageKey ? (
             <div className="h-[400px] w-full shrink-0 relative">
               <img src={`${API_BASE}/uploads/file/${encodeURIComponent(r.imageKey)}`} className="w-full h-full object-cover" crossOrigin="anonymous" />

@@ -181,6 +181,25 @@ router.post("/", zValidator("json", RecipeCreateSchema), async (c) => {
   const me = c.get("user")!;
   const body = c.req.valid("json");
 
+  let imageKey = body.imageKey ?? null;
+
+  // Auto-Generate highly realistic image if none provided
+  if (!imageKey && c.env.AI) {
+    try {
+      const prompt = `Professional food photography, a single delicious pint of ${body.title} ${body.category} dessert, creamy texture, resting on a modern kitchen counter next to ingredients, soft daylight lighting, high resolution, extreme detail, photorealistic.`;
+      
+      const response = await c.env.AI.run("@cf/stabilityai/stable-diffusion-xl-base-1.0", { prompt });
+      
+      if (response) {
+        const key = `auto-${newId("img")}.png`;
+        await c.env.UPLOADS.put(key, response as ArrayBuffer, { httpMetadata: { contentType: "image/png" } });
+        imageKey = key;
+      }
+    } catch (err) {
+      console.error("Failed to auto-generate edge image:", err);
+    }
+  }
+
   const id = newId("rcp");
   await run(
     c.env,
@@ -196,7 +215,7 @@ router.post("/", zValidator("json", RecipeCreateSchema), async (c) => {
       body.visibility,
       JSON.stringify(body.ingredients),
       JSON.stringify(body.steps),
-      body.imageKey ?? null
+      imageKey
     ]
   );
 
