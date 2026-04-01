@@ -28,7 +28,10 @@ function extractJsonBlock(s: string) {
 }
 
 export async function geminiGenerateJSON<T>(args: GeminiGenerateArgs): Promise<T> {
-  const model = args.model ?? "gemini-2.5-flash";
+  if (!args.apiKey || args.apiKey === "undefined") {
+    throw new Error("GEMINI_API_KEY is missing. Check your .dev.vars or Cloudflare secrets.");
+  }
+  const model = args.model ?? "gemini-2.0-flash";
 
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/` +

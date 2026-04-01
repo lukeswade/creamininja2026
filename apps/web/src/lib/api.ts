@@ -7,6 +7,7 @@ async function parseJson(res: Response) {
   try {
     return JSON.parse(text);
   } catch {
+    console.error("Server returned non-JSON response:", text);
     return { ok: false, error: { message: "Invalid JSON from server", details: text } };
   }
 }
