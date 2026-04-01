@@ -49,12 +49,14 @@ router.post("/from-ingredients", zValidator("json", GenFromIngredients), async (
     ? "The user is using a Ninja CREAMi Deluxe (24oz pint). You MUST scale all ingredients and macros for a massive 24oz yield, and you may utilize Deluxe-exclusive processing modes (like FRAPPE, FROZEN DRINK, SLUSHI, ITALIAN ICE, or CREAMICCINO)."
     : "The user is using a standard Ninja CREAMi (16oz pint). Keep ingredient measurements safely below the 16oz max fill line.";
 
+  const validCategories = [...CORE_CATEGORIES, ...LIFESTYLE_CATEGORIES, ...(body.isDeluxe ? DELUXE_ONLY_CATEGORIES : [])];
+
   const system = `You are an expert Ninja CREAMi recipe developer and nutritionist.
 ${deluxeInstruction}
 Return ONLY valid JSON matching this schema:
 {
   "title": string (3-120 chars, highly engaging),
-  "category": string (2-40 chars),
+  "category": string (Must be EXACTLY one of: ${validCategories.join(", ")}),
   "description": string (Include approximate macros & calories per pint here. Max 280 chars),
   "ingredients": string[] (3-6 items with exact measurements),
   "steps": string[] (3-5 items),
@@ -109,12 +111,14 @@ router.post("/from-image", zValidator("json", GenFromImage), async (c) => {
     ? "The user is using a Ninja CREAMi Deluxe (24oz pint). Scale ingredients for a 24oz yield. You can use Deluxe-exclusive processing modes like FRAPPE, FROZEN DRINK, SLUSHI, ITALIAN ICE, or CREAMICCINO."
     : "The user is using a standard Ninja CREAMi (16oz pint). Keep ingredients scaled for a 16oz max fill line.";
 
+  const validCategories = [...CORE_CATEGORIES, ...LIFESTYLE_CATEGORIES, ...(isDeluxe ? DELUXE_ONLY_CATEGORIES : [])];
+
   const system = `You are a visionary Ninja CREAMi recipe developer.
 ${deluxeInstruction}
 Return ONLY valid JSON matching this schema:
 {
   "title": string (3-120 chars, engaging),
-  "category": string (2-40 chars),
+  "category": string (Must be EXACTLY one of: ${validCategories.join(", ")}),
   "description": string (Include approximate macros & calories per pint here. Max 280 chars),
   "ingredients": string[] (3-6 items with exact measurements),
   "steps": string[] (3-5 items),
@@ -164,12 +168,14 @@ router.post("/from-description", zValidator("json", GenFromDescription), async (
     ? "The user is using a Ninja CREAMi Deluxe (24oz pint). Scale ingredients for a 24oz yield. You can use Deluxe-exclusive processing modes like FRAPPE, FROZEN DRINK, SLUSHI, ITALIAN ICE, or CREAMICCINO."
     : "The user is using a standard Ninja CREAMi (16oz pint). Keep ingredients scaled for a 16oz max capacity.";
 
+  const validCategories = [...CORE_CATEGORIES, ...LIFESTYLE_CATEGORIES, ...(isDeluxe ? DELUXE_ONLY_CATEGORIES : [])];
+
   const system = `You are a visionary Ninja CREAMi recipe developer and flavor architect.
 ${deluxeInstruction}
 Return ONLY valid JSON matching this schema:
 {
   "title": string (3-120 chars, creative, catchy),
-  "category": string (2-40 chars),
+  "category": string (Must be EXACTLY one of: ${validCategories.join(", ")}),
   "description": string (Include approximate macros & calories per pint. Max 280 chars),
   "ingredients": string[] (3-6 items with exact measurements),
   "steps": string[] (3-5 items),
@@ -199,8 +205,10 @@ Include explicit hardware instructions: 1) "Freeze base for 24 hours." 2) State 
   }
 });
 
-// Categories for random "Surprise Me" generation
-const SURPRISE_CATEGORIES = ["Protein Ice Cream", "Gourmet Gelato", "Fresh Sorbet", "Recovery Slushie", "Decadent Treat", "Keto Friendly Ice Cream"];
+// Categories that exactly match the UI dropdown <option> values
+const CORE_CATEGORIES = ["Ice Cream", "Lite Ice Cream", "Protein Ice Cream", "Gelato", "Sorbet", "Smoothie Bowl", "Milkshake", "Slushie", "Frozen Yogurt"];
+const DELUXE_ONLY_CATEGORIES = ["Frappe", "Frozen Drink", "Italian Ice", "Creamiccino"];
+const LIFESTYLE_CATEGORIES = ["Diet/Keto", "Dairy-Free", "Vegan", "Adult", "Creamy", "Decadent", "Refreshing", "Other"];
 const SURPRISE_THEMES = [
   "high-protein peanut butter cup hack",
   "electrolyte frozen recovery slush",
@@ -227,7 +235,8 @@ const SurpriseSchema = z.object({
 router.post("/surprise", zValidator("json", SurpriseSchema), async (c) => {
   const { isDeluxe } = c.req.valid("json");
   
-  const category = SURPRISE_CATEGORIES[Math.floor(Math.random() * SURPRISE_CATEGORIES.length)];
+  const validPool = [...CORE_CATEGORIES, ...LIFESTYLE_CATEGORIES, ...(isDeluxe ? DELUXE_ONLY_CATEGORIES : [])];
+  const category = validPool[Math.floor(Math.random() * validPool.length)];
   const theme = SURPRISE_THEMES[Math.floor(Math.random() * SURPRISE_THEMES.length)];
 
   const deluxeInstruction = isDeluxe
@@ -239,7 +248,7 @@ ${deluxeInstruction}
 Return ONLY valid JSON matching this schema:
 {
   "title": string (3-120 chars, creative, catchy, and fun),
-  "category": string (2-40 chars),
+  "category": string (Must be EXACTLY one of: ${validPool.join(", ")}),
   "description": string (Highly engaging, include approx macros & calories per pint. Max 280 chars),
   "ingredients": string[] (3-6 items with precise measurements),
   "steps": string[] (3-5 items),

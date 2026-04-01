@@ -191,29 +191,20 @@ router.post("/", zValidator("json", RecipeCreateSchema), async (c) => {
       const response = await c.env.AI.run("@cf/stabilityai/stable-diffusion-xl-base-1.0", { prompt });
       
       if (response) {
-        let finalData: any = response;
+        // Robust way to consume as ArrayBuffer regardless of return type (Stream vs Uint8Array)
+        const buffer = await new Response(response).arrayBuffer();
         
-        // Handle object wrapper { image: "base64..." }
-        if (typeof response === "object" && "image" in (response as any)) {
-          const binaryString = atob((response as any).image);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-              bytes[i] = binaryString.charCodeAt(i);
-          }
-          finalData = bytes.buffer;
-        } 
-        // Handle Uint8Array directly
-        else if (response instanceof Uint8Array) {
-          finalData = response.buffer;
+        if (buffer.byteLength > 100) { // basic check that we got something
+          const key = `auto-${newId("img")}.png`;
+          await c.env.UPLOADS.put(key, buffer, { httpMetadata: { contentType: "image/png" } });
+          imageKey = key;
+          console.info(`AI Image Generated and stored in R2: ${key} (${buffer.byteLength} bytes)`);
+        } else {
+          console.warn("AI generated an unexpectedly small/empty image buffer.");
         }
-
-        const key = `auto-${newId("img")}.png`;
-        await c.env.UPLOADS.put(key, finalData, { httpMetadata: { contentType: "image/png" } });
-        imageKey = key;
-        console.info(`AI Image Generated and stored: ${key}`);
       }
     } catch (err: any) {
-      console.error("Failed to auto-generate edge image:", err.message || err);
+      console.error("CRITICAL: Failed to auto-generate edge image:", err);
     }
   }
 

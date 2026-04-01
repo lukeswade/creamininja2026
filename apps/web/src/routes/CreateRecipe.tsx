@@ -42,6 +42,7 @@ export default function CreateRecipe() {
   const [aiIngredients, setAiIngredients] = React.useState("");
   const [aiBusy, setAiBusy] = React.useState(false);
   const [aiPhotoKey, setAiPhotoKey] = React.useState<string | null>(null);
+  const [isUploading, setIsUploading] = React.useState(false);
   
   // App state
   const [isDeluxe, setIsDeluxe] = React.useState(false);
@@ -59,6 +60,7 @@ export default function CreateRecipe() {
 
   async function uploadPhoto(file: File, opts?: { forAi?: boolean }) {
     setErr(null);
+    setIsUploading(true);
     try {
       const presign = await api<{ ok: true; key: string; url: string; headers: Record<string, string> }>("/uploads/presign", {
         method: "POST",
@@ -80,6 +82,8 @@ export default function CreateRecipe() {
       else setImageKey(presign.key);
     } catch (e: any) {
       setErr(e.message || "Upload failed.");
+    } finally {
+      setIsUploading(false);
     }
   }
 
@@ -155,6 +159,7 @@ export default function CreateRecipe() {
       });
 
       applyAiRecipe({ ...res.recipe, category: res.recipe.category || cat });
+      window.scrollTo({ top: window.innerHeight * 0.4, behavior: "smooth" });
     } catch (e: any) {
       setErr(e.message);
     } finally {
@@ -176,6 +181,7 @@ export default function CreateRecipe() {
       });
 
       applyAiRecipe({ ...res.recipe, category: res.recipe.category || cat });
+      window.scrollTo({ top: window.innerHeight * 0.4, behavior: "smooth" });
     } catch (e: any) {
       setErr(e.message);
     } finally {
@@ -220,6 +226,7 @@ export default function CreateRecipe() {
       if (!draft) throw new Error("Surprise Me failed: invalid response.");
 
       applyAiRecipe(draft);
+      window.scrollTo({ top: window.innerHeight * 0.4, behavior: "smooth" });
     } catch (e: any) {
       setErr(e.message);
     } finally {
@@ -287,10 +294,10 @@ export default function CreateRecipe() {
 
               <Button 
                 onClick={aiGenerateFromPhoto} 
-                disabled={aiBusy || !aiPhotoKey || surpriseBusy || busy} 
+                disabled={aiBusy || !aiPhotoKey || surpriseBusy || busy || isUploading} 
                 className="w-full bg-indigo-600 hover:bg-indigo-500 active:scale-95 shadow-lg shadow-indigo-500/20 text-white border-0"
               >
-                {aiBusy ? "Analyzing photo..." : "Analyze Image"}
+                {isUploading ? "Uploading photo..." : (aiBusy ? "Analyzing photo..." : "Analyze Image")}
               </Button>
             </div>
           </div>
