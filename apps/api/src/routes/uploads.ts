@@ -109,7 +109,7 @@ router.get("/file/:key{.+}", authOptional, requireAuth, async (c) => {
     return await streamR2(c, key);
   }
 
-  if (key.startsWith("recipe/")) {
+  if (key.startsWith("recipe/") || key.startsWith("auto-")) {
     // find recipe referencing this key
     const r = await first<{ id: string; author_id: string; visibility: string }>(
       c.env,

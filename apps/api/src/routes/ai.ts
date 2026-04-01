@@ -25,13 +25,13 @@ router.use(
 );
 
 const RecipeSchema = z.object({
-  title: z.string().min(1).max(120),
+  title: z.string().min(1).max(60),
   category: z.string().min(1).max(40),
-  description: z.string().max(280).optional(),
+  description: z.string().max(120),
   ingredients: z.array(z.string().min(1).max(120)).min(3).max(6),
   steps: z.array(z.string().min(1).max(280)).min(3).max(5),
-  notes: z.array(z.string().min(1).max(160)).max(5).optional(),
-  allergens: z.array(z.string().min(1).max(40)).max(5).optional()
+  notes: z.array(z.string().min(1).max(160)).max(2).optional(),
+  allergens: z.array(z.string().min(1).max(40)).max(3).optional()
 });
 
 const GenFromIngredients = z.object({
@@ -51,19 +51,20 @@ router.post("/from-ingredients", zValidator("json", GenFromIngredients), async (
 
   const validCategories = [...CORE_CATEGORIES, ...LIFESTYLE_CATEGORIES, ...(body.isDeluxe ? DELUXE_ONLY_CATEGORIES : [])];
 
-  const system = `You are an expert Ninja CREAMi recipe developer and nutritionist.
+  const system = `You are a Minimalist Chef and Ninja CREAMi expert. 
+Tone: Professional, direct, no fluff.
 ${deluxeInstruction}
-Return ONLY valid JSON matching this schema:
+Return ONLY valid JSON:
 {
-  "title": string (3-120 chars, highly engaging),
-  "category": string (Must be EXACTLY one of: ${validCategories.join(", ")}),
-  "description": string (Include approximate macros & calories per pint here. Max 280 chars),
-  "ingredients": string[] (3-6 items with exact measurements),
-  "steps": string[] (3-5 items),
-  "notes": string[] (optional, max 5 items),
-  "allergens": string[] (optional, max 5 items)
+  "title": string (engaging, 3-60 chars),
+  "category": string (EXACTLY one of: ${validCategories.join(", ")}),
+  "description": string (Nutritional summary only. MAX 120 chars. No flowery AI adjectives),
+  "ingredients": string[] (3-6 items, precise),
+  "steps": string[] (3-5 concise items),
+  "notes": string[] (optional, max 2 items),
+  "allergens": string[] (optional, max 3 items)
 }
-Keep language punchy. Include explicit CREAMi instructions: e.g., "Freeze base upright for 24 hours.", "Spin on LITE ICE CREAM", "Add 1 tbsp milk and select RE-SPIN". Do not return unsafe food advice.`;
+Hardware: 1) "Freeze 24h." 2) Specific Spin (e.g. LITE ICE CREAM). 3) Re-spin if needed.`;
 
   const userPrompt = `Create a ${body.category} CREAMi recipe using these ingredients: ${body.ingredients.join(", ")}.
 Dietary restrictions: ${(body.dietary ?? []).join(", ") || "none"}.
@@ -113,20 +114,20 @@ router.post("/from-image", zValidator("json", GenFromImage), async (c) => {
 
   const validCategories = [...CORE_CATEGORIES, ...LIFESTYLE_CATEGORIES, ...(isDeluxe ? DELUXE_ONLY_CATEGORIES : [])];
 
-  const system = `You are a visionary Ninja CREAMi recipe developer.
+  const system = `You are a Minimalist Chef. Identify ingredients in the photo and invent a recipe.
+Tone: Direct, professional, 0% fluff.
 ${deluxeInstruction}
-Return ONLY valid JSON matching this schema:
+Return ONLY valid JSON:
 {
-  "title": string (3-120 chars, engaging),
-  "category": string (Must be EXACTLY one of: ${validCategories.join(", ")}),
-  "description": string (Include approximate macros & calories per pint here. Max 280 chars),
-  "ingredients": string[] (3-6 items with exact measurements),
+  "title": string (engaging, 3-60 chars),
+  "category": string (EXACTLY one of: ${validCategories.join(", ")}),
+  "description": string (Macros only. MAX 120 chars. No "escape to paradise" tropes),
+  "ingredients": string[] (3-6 items),
   "steps": string[] (3-5 items),
-  "notes": string[] (optional, max 5 items),
-  "allergens": string[] (optional, max 5 items)
+  "notes": string[] (optional),
+  "allergens": string[] (optional)
 }
-First accurately identify the ingredients in the image. Then invent a delicious, modern CREAMi recipe using them.
-Keep language punchy. Include explicit CREAMi hardware instructions: e.g., "Freeze base for 24 hours.", "Install pint and spin on SORBET". Avoid unsafe food advice.`;
+Hardware: 1) "Freeze 24h." 2) Specific Spin program.`;
 
   const userPrompt = `Generate a ${category} CREAMi recipe based on this photo of ingredients.`;
 
@@ -170,20 +171,20 @@ router.post("/from-description", zValidator("json", GenFromDescription), async (
 
   const validCategories = [...CORE_CATEGORIES, ...LIFESTYLE_CATEGORIES, ...(isDeluxe ? DELUXE_ONLY_CATEGORIES : [])];
 
-  const system = `You are a visionary Ninja CREAMi recipe developer and flavor architect.
+  const system = `You are a Minimalist Chef. Architect a recipe from the craving.
+Tone: Concise, technical, professional. 
 ${deluxeInstruction}
-Return ONLY valid JSON matching this schema:
+Return ONLY valid JSON:
 {
-  "title": string (3-120 chars, creative, catchy),
-  "category": string (Must be EXACTLY one of: ${validCategories.join(", ")}),
-  "description": string (Include approximate macros & calories per pint. Max 280 chars),
-  "ingredients": string[] (3-6 items with exact measurements),
-  "steps": string[] (3-5 items),
-  "notes": string[] (optional, max 5 items),
-  "allergens": string[] (optional, max 5 items)
+  "title": string (3-60 chars),
+  "category": string (EXACTLY one of: ${validCategories.join(", ")}),
+  "description": string (Macros summary. MAX 120 chars. No marketing fluff),
+  "ingredients": string[] (3-6 items),
+  "steps": string[] (3-5 concise items),
+  "notes": string[] (optional),
+  "allergens": string[] (optional)
 }
-Read the user's craving/idea. Architect the perfect CREAMi recipe for it. 
-Include explicit hardware instructions: 1) "Freeze base for 24 hours." 2) State the exact spin program (e.g., LITE ICE CREAM, SORBET). Avoid unsafe food advice.`;
+Hardware: 1) "Freeze 24h." 2) Specific Spin program.`;
 
   const userPrompt = `Create an incredible CREAMi recipe based on this exact description or craving: "${description}".`;
 
@@ -243,22 +244,21 @@ router.post("/surprise", zValidator("json", SurpriseSchema), async (c) => {
     ? "The user is using a Ninja CREAMi Deluxe (24oz pint). Scale ingredients for a 24oz yield. You can use Deluxe-exclusive processing modes like FRAPPE, FROZEN DRINK, SLUSHI, ITALIAN ICE, or CREAMICCINO."
     : "The user is using a standard Ninja CREAMi (16oz pint). Keep ingredients scaled for a 16oz max capacity.";
 
-  const system = `You are a viral TikTok Ninja CREAMi recipe developer and flavor architect.
+  const system = `You are a Minimalist Chef creating secret menu CREAMi hacks.
 ${deluxeInstruction}
-Return ONLY valid JSON matching this schema:
+Return ONLY valid JSON:
 {
-  "title": string (3-120 chars, creative, catchy, and fun),
-  "category": string (Must be EXACTLY one of: ${validPool.join(", ")}),
-  "description": string (Highly engaging, include approx macros & calories per pint. Max 280 chars),
-  "ingredients": string[] (3-6 items with precise measurements),
-  "steps": string[] (3-5 items),
-  "notes": string[] (optional, max 5 items),
-  "allergens": string[] (optional, max 5 items)
+  "title": string (3-60 chars),
+  "category": string (EXACTLY one of: ${validPool.join(", ")}),
+  "description": string (Macros only. MAX 120 chars. 0% generic AI fluff),
+  "ingredients": string[] (3-6 items),
+  "steps": string[] (3-5 concise items),
+  "notes": string[] (optional),
+  "allergens": string[] (optional)
 }
-You must include clear CREAMi-specific hardware instructions: 1) "Freeze base for 24 hours." 2) The exact spin program (e.g., "Spin on LITE ICE CREAM", "Spin on GELATO", or "Spin on SORBET"). 3) Provide Mix-in instructions if applicable. Be incredibly creative and fun!`;
+Hardware: 1) "Freeze 24h." 2) Exact Spin mode.`;
 
-  const userPrompt = `Create an amazing ${category} CREAMi recipe with the theme: "${theme}". 
-Be creative with the name and ingredients! Make it sound delicious and fun.`;
+  const userPrompt = `Create a ${category} recipe with theme: "${theme}".`;
 
   try {
     const recipe = await geminiGenerateJSON<any>({

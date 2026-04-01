@@ -182,33 +182,35 @@ router.post("/", zValidator("json", RecipeCreateSchema), async (c) => {
   const body = c.req.valid("json");
 
   let imageKey = body.imageKey ?? null;
+  const id = newId("rcp");
 
-  // Auto-Generate highly realistic image if none provided
+  // If no image provided, trigger background generation
   if (!imageKey && c.env.AI) {
-    try {
-      const prompt = `Professional food photography, a single delicious pint of ${body.title} ${body.category} dessert, creamy texture, resting on a modern kitchen counter next to ingredients, soft daylight lighting, high resolution, extreme detail, photorealistic.`;
-      
-      const response = await c.env.AI.run("@cf/stabilityai/stable-diffusion-xl-base-1.0", { prompt });
-      
-      if (response) {
-        // Robust way to consume as ArrayBuffer regardless of return type (Stream vs Uint8Array)
-        const buffer = await new Response(response).arrayBuffer();
-        
-        if (buffer.byteLength > 100) { // basic check that we got something
-          const key = `recipe/auto-${newId("img")}.png`;
-          await c.env.UPLOADS.put(key, buffer, { httpMetadata: { contentType: "image/png" } });
-          imageKey = key;
-          console.info(`AI Image Generated and stored in R2: ${key} (${buffer.byteLength} bytes)`);
-        } else {
-          console.warn("AI generated an unexpectedly small/empty image buffer.");
+    c.executionCtx.waitUntil(
+      (async () => {
+        try {
+          const prompt = `Professional food photography, a single delicious pint of ${body.title} ${body.category} dessert, creamy texture, resting on a modern kitchen counter next to ingredients, soft daylight lighting, high resolution, extreme detail, photorealistic.`;
+          const response = await c.env.AI.run("@cf/stabilityai/stable-diffusion-xl-base-1.0", { prompt });
+          
+          if (response) {
+            const buffer = await new Response(response).arrayBuffer();
+            if (buffer.byteLength > 100) {
+              const key = `recipe/auto-${newId("img")}.png`;
+              await c.env.UPLOADS.put(key, buffer, { httpMetadata: { contentType: "image/png" } });
+              
+              // Update the recipe record with the new key in the background
+              await run(c.env, "UPDATE recipes SET image_key = ? WHERE id = ?", [key, id]);
+              console.info(`Background AI Image Generated: ${key} for recipe ${id}`);
+            }
+          }
+        } catch (err) {
+          console.error("BACKGROUND ERR: Failed to auto-generate image:", err);
         }
-      }
-    } catch (err: any) {
-      console.error("CRITICAL: Failed to auto-generate edge image:", err);
-    }
+      })()
+    );
   }
 
-  const id = newId("rcp");
+  // Save the text content immediately
   await run(
     c.env,
     `INSERT INTO recipes

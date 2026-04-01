@@ -49,7 +49,12 @@ export default function RecipeDetail() {
 
   const q = useQuery({
     queryKey: ["recipe", id, !!user],
-    queryFn: () => api<{ ok: true; recipe: Recipe }>(`/recipes/${id}`, { method: "GET" })
+    queryFn: () => api<{ ok: true; recipe: Recipe }>(`/recipes/${id}`, { method: "GET" }),
+    refetchInterval: (query) => {
+      const r = query.state.data?.recipe;
+      // If recipe exists but has no image, poll every 3s
+      return r && !r.imageKey ? 3000 : false;
+    }
   });
 
   async function toggleStar() {
@@ -166,20 +171,37 @@ export default function RecipeDetail() {
 
       {/* Main content area */}
       <div className="-mx-4 -mt-6 sm:mx-0 sm:mt-0 sm:overflow-hidden sm:rounded-[2.5rem] sm:border sm:border-white/10 sm:bg-slate-900/40 sm:backdrop-blur-xl sm:shadow-2xl sm:shadow-black/50">
-        {/* Image */}
-        {r.imageKey && (
-          <div className="relative aspect-square sm:aspect-auto sm:h-[500px]">
-            <img
-              className="h-full w-full object-cover"
-              src={`${API_BASE}/uploads/file/${encodeURIComponent(r.imageKey)}`}
-              alt={r.title}
-              onError={(e) => {
-                e.currentTarget.src = "https://placehold.co/1200x800/1e1e2f/8b5cf6?text=CREAMi+Creation";
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
-          </div>
-        )}
+        {/* Image / Generation State */}
+        <div className="relative aspect-square sm:aspect-auto sm:min-h-[400px] sm:h-[500px] bg-slate-950 overflow-hidden">
+          {r.imageKey ? (
+            <>
+              <img
+                className="h-full w-full object-cover animate-in fade-in duration-700"
+                src={`${API_BASE}/uploads/file/${encodeURIComponent(r.imageKey)}`}
+                alt={r.title}
+                onError={(e) => {
+                  e.currentTarget.src = "https://placehold.co/1200x800/1e1e2f/8b5cf6?text=CREAMi+Creation";
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
+            </>
+          ) : (
+             <div className="flex h-full w-full flex-col items-center justify-center bg-slate-950 p-12 text-center">
+                <div className="absolute inset-0 bg-mesh opacity-20 animate-pulse" />
+                <div className="relative z-10 flex flex-col items-center gap-4">
+                   <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-600/20 shadow-inner">
+                      <Loader2 className="h-8 w-8 animate-spin text-violet-400" />
+                   </div>
+                   <div className="space-y-1">
+                      <div className="text-lg font-bold text-slate-200">Architecting your vision...</div>
+                      <div className="text-sm text-violet-400/60 font-medium">Cloudflare Workers are generating your AI photo.</div>
+                   </div>
+                </div>
+                {/* Shimmer overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-shimmer" />
+             </div>
+          )}
+        </div>
 
         <div className="p-6">
           {/* Header */}
