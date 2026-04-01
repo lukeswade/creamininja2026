@@ -195,7 +195,7 @@ router.post("/", zValidator("json", RecipeCreateSchema), async (c) => {
         const buffer = await new Response(response).arrayBuffer();
         
         if (buffer.byteLength > 100) { // basic check that we got something
-          const key = `auto-${newId("img")}.png`;
+          const key = `recipe/auto-${newId("img")}.png`;
           await c.env.UPLOADS.put(key, buffer, { httpMetadata: { contentType: "image/png" } });
           imageKey = key;
           console.info(`AI Image Generated and stored in R2: ${key} (${buffer.byteLength} bytes)`);

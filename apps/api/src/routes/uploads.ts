@@ -8,17 +8,19 @@ import { jsonOk, notFound, forbidden, badRequest } from "../util/http";
 import { AwsClient } from "aws4fetch";
 import { first, run } from "../db/sql";
 
-/**
- * Upload flow:
- * 1) Client requests POST /uploads/presign with { kind: 'avatar'|'recipe', contentType }
- * 2) API returns { key, url, headers }
- * 3) Client PUTs file to presigned URL
- * 4) Client saves key on profile or recipe create/update
- *
- * Storage is private. Access is served via /uploads/file/:key (proxy + auth rules).
- */
+type AuthedUser = {
+  id: string;
+  handle: string;
+  displayName: string;
+  avatarKey: string | null;
+};
 
-const router = new Hono<{ Bindings: Env }>();
+type HonoVars = {
+  user: AuthedUser;
+  secureHeadersNonce?: string;
+};
+
+const router = new Hono<{ Bindings: Env; Variables: HonoVars }>();
 router.use("*", authOptional, requireAuth, requireCsrf);
 
 const PresignSchema = z.object({
@@ -77,7 +79,7 @@ router.post("/presign", zValidator("json", PresignSchema), async (c) => {
       "content-type": contentType
     },
     // Avoid signing content-length; browsers cannot reliably set it on PUT.
-    aws: { signQuery: true, expires: 600 }
+    aws: { signQuery: true }
   });
 
   return c.json(jsonOk({ ok: true, key, url: signed.url, headers: { "content-type": contentType } }));
@@ -131,6 +133,12 @@ async function streamR2(c: any, key: string) {
   obj.writeHttpMetadata(headers);
   headers.set("etag", obj.httpEtag);
   headers.set("cache-control", "public, max-age=3600");
+
+  // ALLOW CROSS-ORIGIN EMBEDDING
+  // This allows creamininja.com to show images hosted on api.creamininja.com
+  headers.set("Cross-Origin-Resource-Policy", "cross-origin");
+  headers.set("Access-Control-Allow-Origin", c.env.APP_ORIGIN || "*");
+
   return new Response(obj.body, { headers });
 }
 
