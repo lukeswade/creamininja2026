@@ -79,7 +79,7 @@ export default function Feed() {
       </div>
 
       {/* Tabs and filters */}
-      <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between !overflow-visible z-10">
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setTab("popular")}

@@ -310,9 +310,20 @@ export default function CreateRecipe() {
 
       <Card>
         <div className="text-lg font-semibold">Create a recipe</div>
-        <div className="mt-1 text-sm text-slate-400">Fill in the basics. Only title and category are required.</div>
+        <div className="mt-1 text-sm text-slate-400 mb-6">Fill in the basics. Only title and category are required.</div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <div className="flex items-center justify-between gap-4 border border-violet-500/20 bg-violet-950/20 rounded-xl px-4 py-3 mb-6 shadow-inner transition-colors">
+          <div className="flex flex-col">
+             <div className="font-bold text-slate-200">👑 Ninja CREAMi Deluxe (24oz)</div>
+             <div className="text-xs text-violet-300 mt-0.5">Unlock 24oz AI scaling and Deluxe-exclusive categories.</div>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" checked={isDeluxe} onChange={e => setIsDeluxe(e.target.checked)} className="sr-only peer" />
+            <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 peer-checked:after:bg-white after:border-slate-300 peer-checked:after:border-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600 shadow-inner"></div>
+          </label>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2">
           <div>
             <label className="text-xs text-slate-400">Title *</label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What's your creation called?" />
