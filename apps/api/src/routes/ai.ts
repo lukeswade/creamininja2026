@@ -44,19 +44,18 @@ const GenFromIngredients = z.object({
 router.post("/from-ingredients", zValidator("json", GenFromIngredients), async (c) => {
   const body = c.req.valid("json");
 
-  const system = `You are an expert Ninja CREAMi recipe developer.
+  const system = `You are an expert Ninja CREAMi recipe developer and nutritionist.
 Return ONLY valid JSON matching this schema:
 {
-  "title": string (3-120 chars),
+  "title": string (3-120 chars, highly engaging),
   "category": string (2-40 chars),
-  "description": string (optional, max 280 chars),
-  "ingredients": string[] (3-6 items),
+  "description": string (Include approximate macros & calories per pint here. Max 280 chars),
+  "ingredients": string[] (3-6 items with exact measurements),
   "steps": string[] (3-5 items),
   "notes": string[] (optional, max 5 items),
   "allergens": string[] (optional, max 5 items)
 }
-Ultra-simple: 3-6 ingredients, 3-5 steps. Keep language short.
-Include clear CREAMi-specific instructions (freeze time, respin notes, mix-ins). Avoid unsafe food advice.`;
+Keep language punchy. Include explicit CREAMi instructions: e.g., "Freeze base upright for 24 hours.", "Spin on LITE ICE CREAM", "Add 1 tbsp milk and select RE-SPIN". Do not return unsafe food advice.`;
 
   const userPrompt = `Create a ${body.category} CREAMi recipe using these ingredients: ${body.ingredients.join(", ")}.
 Dietary restrictions: ${(body.dietary ?? []).join(", ") || "none"}.
@@ -99,19 +98,19 @@ router.post("/from-image", zValidator("json", GenFromImage), async (c) => {
 
   const b64 = arrayBufferToBase64(bytes);
 
-  const system = `You are an expert Ninja CREAMi recipe developer.
+  const system = `You are a visionary Ninja CREAMi recipe developer.
 Return ONLY valid JSON matching this schema:
 {
-  "title": string (3-120 chars),
+  "title": string (3-120 chars, engaging),
   "category": string (2-40 chars),
-  "description": string (optional, max 280 chars),
-  "ingredients": string[] (3-6 items),
+  "description": string (Include approximate macros & calories per pint here. Max 280 chars),
+  "ingredients": string[] (3-6 items with exact measurements),
   "steps": string[] (3-5 items),
   "notes": string[] (optional, max 5 items),
   "allergens": string[] (optional, max 5 items)
 }
-First infer reasonable ingredients from the image; then propose a recipe in the requested category.
-Ultra-simple: 3-6 ingredients, 3-5 steps. Keep language short. Avoid unsafe food advice.`;
+First accurately identify the ingredients in the image. Then invent a delicious, modern CREAMi recipe using them.
+Keep language punchy. Include explicit CREAMi hardware instructions: e.g., "Freeze base for 24 hours.", "Install pint and spin on SORBET". Avoid unsafe food advice.`;
 
   const userPrompt = `Generate a ${category} CREAMi recipe based on this photo of ingredients.`;
 
@@ -142,41 +141,42 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 }
 
 // Categories for random "Surprise Me" generation
-const SURPRISE_CATEGORIES = ["Ice Cream", "Gelato", "Sorbet", "Slushie", "Creamy", "Decadent"];
+const SURPRISE_CATEGORIES = ["Protein Ice Cream", "Gourmet Gelato", "Fresh Sorbet", "Recovery Slushie", "Decadent Treat", "Keto Friendly Ice Cream"];
 const SURPRISE_THEMES = [
-  "classic vanilla bean with a twist",
-  "chocolate lovers dream",
-  "tropical fruit paradise",
-  "peanut butter cup indulgence",
+  "high-protein peanut butter cup hack",
+  "electrolyte frozen recovery slush",
+  "midnight munchies mashup",
   "cookies and cream explosion",
-  "salted caramel delight",
-  "berry blast summer treat",
-  "coffee shop inspired",
+  "salted caramel pretzel delight",
+  "tropical dragonfruit paradise",
+  "coffee shop frappuccino inspired",
+  "matcha green tea wellness",
   "birthday cake celebration",
   "mint chocolate chip refresh",
   "banana foster homage",
   "key lime pie tribute",
-  "maple pecan autumn vibes",
+  "maple butter pecan autumn vibes",
   "s'mores campfire classic",
-  "strawberry cheesecake swirl"
+  "strawberry cheesecake protein swirl",
+  "lemon curd and shortbread crunch"
 ];
 
 router.post("/surprise", async (c) => {
   const category = SURPRISE_CATEGORIES[Math.floor(Math.random() * SURPRISE_CATEGORIES.length)];
   const theme = SURPRISE_THEMES[Math.floor(Math.random() * SURPRISE_THEMES.length)];
 
-  const system = `You are an expert Ninja CREAMi recipe developer.
+  const system = `You are a viral TikTok Ninja CREAMi recipe developer and flavor architect.
 Return ONLY valid JSON matching this schema:
 {
-  "title": string (3-120 chars, creative and fun),
+  "title": string (3-120 chars, creative, catchy, and fun),
   "category": string (2-40 chars),
-  "description": string (optional, max 280 chars),
-  "ingredients": string[] (3-6 items with quantities),
+  "description": string (Highly engaging, include approx macros & calories per pint. Max 280 chars),
+  "ingredients": string[] (3-6 items with precise measurements),
   "steps": string[] (3-5 items),
   "notes": string[] (optional, max 5 items),
   "allergens": string[] (optional, max 5 items)
 }
-Ultra-simple: 3-6 ingredients, 3-5 steps. Keep language short. Include clear CREAMi-specific instructions (freeze time, respin notes, mix-ins). Be creative and fun!`;
+You must include clear CREAMi-specific hardware instructions: 1) "Freeze base for 24 hours." 2) The exact spin program (e.g., "Spin on LITE ICE CREAM", "Spin on GELATO", or "Spin on SORBET"). 3) Provide Mix-in instructions if applicable. Be incredibly creative and fun!`;
 
   const userPrompt = `Create an amazing ${category} CREAMi recipe with the theme: "${theme}". 
 Be creative with the name and ingredients! Make it sound delicious and fun.`;
@@ -186,8 +186,8 @@ Be creative with the name and ingredients! Make it sound delicious and fun.`;
       apiKey: c.env.GEMINI_API_KEY,
       system,
       user: userPrompt,
-      maxOutputTokens: 450,
-      temperature: 0.65
+      maxOutputTokens: 600,
+      temperature: 0.85
     });
 
     const parsed = RecipeSchema.safeParse(recipe);

@@ -9,13 +9,11 @@ import { Home, Users, PlusCircle, LogOut, Menu, X, Image } from "lucide-react";
 export function TopNav() {
   const { user, csrfToken, setAuth } = useAuth();
   const nav = useNavigate();
-  const [mobileOpen, setMobileOpen] = React.useState(false);
 
   async function logout() {
     await api("/auth/logout", { method: "POST", body: JSON.stringify({}), csrf: csrfToken || "" });
     setAuth(null, null);
     nav("/login");
-    setMobileOpen(false);
   }
 
   const linkClass = (isActive: boolean) =>
@@ -33,7 +31,7 @@ export function TopNav() {
     }`;
 
   return (
-    <div className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/90 backdrop-blur-lg">
+    <div className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/60 backdrop-blur-xl shadow-lg shadow-black/20">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
@@ -75,123 +73,33 @@ export function TopNav() {
             <>
               <NavLink
                 to={`/@${user.handle}`}
-                className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-200 transition hover:bg-slate-800"
+                className="flex items-center gap-2 rounded-lg border border-white/5 bg-slate-800/50 px-3 py-1.5 text-sm font-medium text-slate-200 transition hover:bg-slate-700/50"
               >
                 <Avatar handle={user.handle} avatarKey={user.avatarKey} size="xs" />
                 <span className="max-w-[100px] truncate">{user.displayName}</span>
               </NavLink>
               <button
                 onClick={logout}
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-400 transition hover:bg-slate-800 hover:text-slate-200"
+                className="group flex items-center justify-center rounded-lg p-2 text-slate-400 transition hover:bg-red-500/10 hover:text-red-400"
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-4 w-4 transition group-hover:scale-110" />
               </button>
             </>
           ) : (
             <>
-              <Button variant="ghost" size="sm" onClick={() => nav("/login")}>
+              <Button variant="ghost" onClick={() => nav("/login")}>
                 Log in
               </Button>
               <Button
-                size="sm"
                 onClick={() => nav("/register")}
-                className="bg-gradient-to-r from-violet-600 to-fuchsia-600"
+                className="bg-gradient-to-r from-violet-600 to-fuchsia-600 shadow-lg shadow-violet-500/25 transition hover:shadow-violet-500/40 hover:brightness-110"
               >
                 Sign up
               </Button>
             </>
           )}
         </div>
-
-        {/* Mobile menu button */}
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="flex items-center justify-center rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-slate-200 md:hidden"
-        >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
       </div>
-
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="border-t border-slate-800 bg-slate-950 px-4 pb-4 md:hidden">
-          <nav className="flex flex-col gap-1 pt-3">
-            <NavLink
-              to="/feed"
-              onClick={() => setMobileOpen(false)}
-              className={({ isActive }) => mobileLinkClass(isActive)}
-            >
-              <Home className="h-5 w-5" />
-              Feed
-            </NavLink>
-            <NavLink
-              to="/gallery"
-              onClick={() => setMobileOpen(false)}
-              className={({ isActive }) => mobileLinkClass(isActive)}
-            >
-              <Image className="h-5 w-5" />
-              Gallery
-            </NavLink>
-            {user && (
-              <>
-                <NavLink
-                  to="/friends"
-                  onClick={() => setMobileOpen(false)}
-                  className={({ isActive }) => mobileLinkClass(isActive)}
-                >
-                  <Users className="h-5 w-5" />
-                  Dojo
-                </NavLink>
-                <NavLink
-                  to="/create"
-                  onClick={() => setMobileOpen(false)}
-                  className={({ isActive }) => mobileLinkClass(isActive)}
-                >
-                  <PlusCircle className="h-5 w-5" />
-                  Create
-                </NavLink>
-              </>
-            )}
-          </nav>
-
-          <div className="mt-4 border-t border-slate-800 pt-4">
-            {user ? (
-              <div className="flex flex-col gap-2">
-                <NavLink
-                  to={`/@${user.handle}`}
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-slate-300 hover:bg-slate-800/50"
-                >
-                  <Avatar handle={user.handle} avatarKey={user.avatarKey} size="sm" />
-                  <div>
-                    <div className="text-slate-200">{user.displayName}</div>
-                    <div className="text-sm text-slate-500">@{user.handle}</div>
-                  </div>
-                </NavLink>
-                <button
-                  onClick={logout}
-                  className="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-red-400 hover:bg-slate-800/50"
-                >
-                  <LogOut className="h-5 w-5" />
-                  Log out
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <Button variant="ghost" onClick={() => { nav("/login"); setMobileOpen(false); }} className="w-full justify-center">
-                  Log in
-                </Button>
-                <Button
-                  onClick={() => { nav("/register"); setMobileOpen(false); }}
-                  className="w-full justify-center bg-gradient-to-r from-violet-600 to-fuchsia-600"
-                >
-                  Sign up
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

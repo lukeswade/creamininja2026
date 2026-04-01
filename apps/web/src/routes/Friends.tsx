@@ -7,7 +7,11 @@ import { Avatar } from "../components/Avatar";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { Skeleton } from "../components/Skeleton";
-import { Users, UserCheck, UserX, Clock, Search, UserPlus, Send, Loader2 } from "lucide-react";
+import { Users, UserCheck, UserX, Clock, Search, UserPlus, Send, Loader2, Activity } from "lucide-react";
+import { RecipeCard, RecipeSummary } from "../components/RecipeCard";
+
+type FeedItem = RecipeSummary;
+type FeedResp = { ok: true; items: FeedItem[] };
 
 type Friend = { id: string; handle: string; displayName: string; avatarKey: string | null; requestId?: string };
 type FriendsResp = { ok: true; friends: Friend[]; pending: Friend[]; outgoing: Friend[] };
@@ -17,10 +21,16 @@ type SearchResp = { ok: true; users: SearchUser[] };
 export default function Friends() {
   const { user, csrfToken } = useAuth();
   const qc = useQueryClient();
-  const [tab, setTab] = React.useState<"friends" | "pending" | "recruit">("friends");
+  const [tab, setTab] = React.useState<"friends" | "pending" | "recruit" | "activity">("activity");
   const [search, setSearch] = React.useState("");
   const [recruitSearch, setRecruitSearch] = React.useState("");
   const [sendingRequest, setSendingRequest] = React.useState<string | null>(null);
+
+  const activityQ = useQuery({
+    queryKey: ["networkActivity"],
+    queryFn: () => api<FeedResp>("/feed/network?window=month&sort=time", { method: "GET" }),
+    enabled: !!user && tab === "activity"
+  });
 
   const q = useQuery({
     queryKey: ["friends"],
@@ -84,10 +94,21 @@ export default function Friends() {
 
       {/* Tabs */}
       <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
+          <button
+            onClick={() => setTab("activity")}
+            className={`whitespace-nowrap inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
+              tab === "activity"
+                ? "bg-violet-600 text-white"
+                : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+            }`}
+          >
+            <Activity className="h-4 w-4" />
+            Activity
+          </button>
           <button
             onClick={() => setTab("friends")}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
+            className={`whitespace-nowrap inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
               tab === "friends"
                 ? "bg-violet-600 text-white"
                 : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
@@ -119,7 +140,7 @@ export default function Friends() {
           </button>
           <button
             onClick={() => setTab("recruit")}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
+            className={`whitespace-nowrap inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
               tab === "recruit"
                 ? "bg-violet-600 text-white"
                 : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
@@ -194,9 +215,8 @@ export default function Friends() {
                   </div>
                   <Button
                     variant="ghost"
-                    size="sm"
                     onClick={() => remove(f.id)}
-                    className="text-slate-400 hover:text-red-400"
+                    className="text-slate-400 hover:text-red-400 p-2"
                   >
                     <UserX className="h-4 w-4" />
                   </Button>
@@ -251,18 +271,16 @@ export default function Friends() {
                         </div>
                         <div className="flex gap-2">
                           <Button
-                            size="sm"
                             onClick={() => accept(f.requestId!)}
-                            className="gap-1.5 bg-gradient-to-r from-violet-600 to-fuchsia-600"
+                            className="gap-1.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 py-1.5 text-sm"
                           >
                             <UserCheck className="h-4 w-4" />
                             Accept
                           </Button>
                           <Button
                             variant="ghost"
-                            size="sm"
                             onClick={() => decline(f.requestId!)}
-                            className="text-slate-400 hover:text-red-400"
+                            className="text-slate-400 hover:text-red-400 p-2"
                           >
                             <UserX className="h-4 w-4" />
                           </Button>
@@ -378,23 +396,21 @@ export default function Friends() {
                     </span>
                   ) : u.status === "pending_incoming" ? (
                     <Button
-                      size="sm"
                       onClick={() => {
                         // Find the request and accept it
                         const req = pending.find(p => p.id === u.id);
                         if (req?.requestId) accept(req.requestId);
                       }}
-                      className="gap-1.5 bg-gradient-to-r from-violet-600 to-fuchsia-600"
+                      className="gap-1.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 py-1.5 text-sm"
                     >
                       <UserCheck className="h-4 w-4" />
                       Accept
                     </Button>
                   ) : (
                     <Button
-                      size="sm"
                       onClick={() => sendRequest(u.handle)}
                       disabled={sendingRequest === u.handle}
-                      className="gap-1.5"
+                      className="gap-1.5 px-3 py-1.5 text-sm"
                     >
                       {sendingRequest === u.handle ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -407,6 +423,53 @@ export default function Friends() {
                 </Card>
               ))}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Activity tab */}
+      {tab === "activity" && (
+        <div className="grid gap-6">
+          {activityQ.isLoading ? (
+            <div className="grid gap-4">
+              {[0, 1].map((i) => (
+                <Card key={i}>
+                  <div className="flex flex-col gap-4 sm:flex-row">
+                    <Skeleton className="h-32 w-full rounded-xl sm:h-24 sm:w-40" />
+                    <div className="flex-1">
+                      <Skeleton className="h-6 w-3/4" />
+                      <Skeleton className="mt-3 h-4 w-full" />
+                      <Skeleton className="mt-2 h-4 w-2/3" />
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (activityQ.data?.items || []).length === 0 ? (
+            <Card className="text-center py-12">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-800">
+                <Activity className="h-8 w-8 text-slate-500" />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold text-slate-200">
+                Quiet in the Dojo
+              </h3>
+              <p className="mt-2 text-sm text-slate-400">
+                Recruit ninjas to see their delicious concoctions here.
+              </p>
+              <Button
+                onClick={() => setTab("recruit")}
+                className="mt-4 gap-2"
+              >
+                <UserPlus className="h-4 w-4" />
+                Find ninjas
+              </Button>
+            </Card>
+          ) : (
+             <div className="grid gap-4">
+              {(activityQ.data?.items || []).map((r) => (
+                <RecipeCard key={r.id} r={r} onMutate={() => qc.invalidateQueries({ queryKey: ["networkActivity"] })} />
+              ))}
+             </div>
           )}
         </div>
       )}

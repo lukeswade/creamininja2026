@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "../lib/auth";
 import { TopNav } from "../components/TopNav";
+import { BottomNav } from "../components/BottomNav";
 import Landing from "./Landing";
 import Login from "./Login";
 import Register from "./Register";
@@ -23,7 +24,8 @@ export default function App() {
   return (
     <AuthProvider>
       <TopNav />
-      <div className="mx-auto max-w-6xl px-4 py-6">
+      {/* pb-24 gives padding for Mobile BottomNav plus extra space */}
+      <div className="mx-auto max-w-6xl px-4 py-6 pb-24 md:pb-6 relative z-0">
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
@@ -51,6 +53,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
+      <BottomNav />
     </AuthProvider>
   );
 }

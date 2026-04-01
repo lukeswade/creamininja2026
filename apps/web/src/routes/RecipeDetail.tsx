@@ -9,7 +9,8 @@ import { NinjaStar } from "../components/NinjaStar";
 import { Avatar } from "../components/Avatar";
 import { ShareWithFriendsModal } from "../components/ShareWithFriendsModal";
 import { Skeleton } from "../components/Skeleton";
-import { ChefHat, Clock, Eye, EyeOff, Users, Share2, ArrowLeft } from "lucide-react";
+import { ChefHat, Clock, Eye, EyeOff, Users, Share2, ArrowLeft, Loader2 } from "lucide-react";
+import * as htmlToImage from "html-to-image";
 
 type Recipe = {
   id: string;
@@ -42,6 +43,8 @@ export default function RecipeDetail() {
   const { id } = useParams();
   const { user, csrfToken } = useAuth();
   const [shareOpen, setShareOpen] = React.useState(false);
+  const [exporting, setExporting] = React.useState(false);
+  const exportRef = React.useRef<HTMLDivElement>(null);
 
   const q = useQuery({
     queryKey: ["recipe", id, !!user],
@@ -132,6 +135,23 @@ export default function RecipeDetail() {
     year: "numeric"
   });
 
+  async function exportAsImage() {
+    if (!exportRef.current || exporting || !r) return;
+    setExporting(true);
+    try {
+      const dataUrl = await htmlToImage.toPng(exportRef.current, { cacheBust: true, pixelRatio: 2 });
+      const link = document.createElement("a");
+      link.download = `CreamiNinja-${r.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to export image");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div className="grid gap-6">
       {/* Back link */}
@@ -140,13 +160,13 @@ export default function RecipeDetail() {
         Back to feed
       </Link>
 
-      {/* Main card */}
-      <Card className="overflow-hidden">
+      {/* Main content area */}
+      <div className="-mx-4 -mt-6 sm:mx-0 sm:mt-0 sm:overflow-hidden sm:rounded-[2.5rem] sm:border sm:border-white/10 sm:bg-slate-900/40 sm:backdrop-blur-xl sm:shadow-2xl sm:shadow-black/50">
         {/* Image */}
         {r.imageKey && (
-          <div className="relative">
+          <div className="relative aspect-square sm:aspect-auto sm:h-[500px]">
             <img
-              className="w-full max-h-[400px] object-cover"
+              className="h-full w-full object-cover"
               src={`${API_BASE}/uploads/file/${encodeURIComponent(r.imageKey)}`}
               alt={r.title}
             />
@@ -198,38 +218,48 @@ export default function RecipeDetail() {
               )}
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-3">
+            {/* Mobile-only Sticky Actions / Desktop Actions */}
+            <div className="fixed bottom-24 right-4 z-40 flex flex-col gap-3 sm:static sm:flex-row sm:items-center">
               <button
                 onClick={user ? toggleStar : undefined}
                 disabled={!user}
-                className={`group flex items-center gap-2 rounded-xl px-4 py-2 transition ${
+                className={`group flex items-center gap-2 rounded-2xl px-5 py-3 transition-all active:scale-95 shadow-lg ${
                   r.viewerStarred
-                    ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
-                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                    ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-violet-500/25"
+                    : "bg-slate-800/90 backdrop-blur-md text-slate-300 hover:bg-slate-700"
                 } ${!user ? "cursor-not-allowed opacity-50" : ""}`}
               >
-                <NinjaStar className={`h-5 w-5 ${r.viewerStarred ? "text-white" : "text-violet-400"}`} />
-                <span className="font-semibold">{r.starsCount}</span>
+                <NinjaStar className={`h-6 w-6 ${r.viewerStarred ? "text-white" : "text-violet-400"}`} />
+                <span className="font-bold">{r.starsCount}</span>
               </button>
               
               {canShare && (
-                <Button variant="secondary" onClick={() => setShareOpen(true)} className="gap-2">
-                  <Share2 className="h-4 w-4" />
-                  Share
+                <Button variant="secondary" onClick={() => setShareOpen(true)} className="gap-2 rounded-2xl px-5 py-3 shadow-lg bg-slate-800/90 backdrop-blur-md">
+                  <Share2 className="h-5 w-5" />
+                  <span className="hidden sm:inline">Share</span>
                 </Button>
               )}
+              
+              <Button 
+                variant="primary" 
+                onClick={exportAsImage} 
+                disabled={exporting}
+                className="gap-2 rounded-2xl px-5 py-3 shadow-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white border-0 hover:shadow-violet-500/40"
+              >
+                {exporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <span className="text-xl">📸</span>}
+                <span className="hidden sm:inline">{exporting ? "Exporting..." : "Export"}</span>
+              </Button>
             </div>
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Ingredients and Steps */}
       <div className="grid gap-6 lg:grid-cols-5">
         {/* Ingredients */}
-        <Card className="lg:col-span-2">
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-100">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600/20">
+        <Card className="lg:col-span-2 rounded-[2rem] p-6 lg:p-8">
+          <h2 className="flex items-center gap-3 text-xl font-bold text-slate-100">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-600/20 shadow-inner">
               <ChefHat className="h-4 w-4 text-violet-400" />
             </span>
             Ingredients
@@ -249,9 +279,9 @@ export default function RecipeDetail() {
         </Card>
 
         {/* Steps */}
-        <Card className="lg:col-span-3">
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-100">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-fuchsia-600/20">
+        <Card className="lg:col-span-3 rounded-[2rem] p-6 lg:p-8">
+          <h2 className="flex items-center gap-3 text-xl font-bold text-slate-100">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-fuchsia-600/20 shadow-inner">
               <Clock className="h-4 w-4 text-fuchsia-400" />
             </span>
             Instructions
@@ -282,6 +312,80 @@ export default function RecipeDetail() {
           recipeTitle={r.title}
         />
       )}
+
+      {/* Hidden Export Node */}
+      <div className="fixed top-0 left-[-9999px] w-[600px] bg-slate-950 pointer-events-none p-8" ref={exportRef}>
+        <div className="bg-slate-900/60 rounded-3xl overflow-hidden border border-white/10 flex flex-col shadow-2xl">
+          {r.imageKey ? (
+            <div className="h-[400px] w-full shrink-0 relative">
+              <img src={`${API_BASE}/uploads/file/${encodeURIComponent(r.imageKey)}`} className="w-full h-full object-cover" crossOrigin="anonymous" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
+            </div>
+          ) : (
+            <div className="pt-8" />
+          )}
+
+          <div className="p-8 pb-10 flex flex-col gap-6">
+            <div>
+              <div className="inline-flex rounded-full bg-violet-600/20 px-3 py-1 text-sm font-semibold text-violet-300">
+                {r.category}
+              </div>
+              <h1 className="mt-3 text-4xl font-extrabold text-white leading-tight">
+                {r.title}
+              </h1>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <img 
+                src={r.author.avatarKey ? `${API_BASE}/uploads/file/${encodeURIComponent(r.author.avatarKey)}` : `https://api.dicebear.com/7.x/open-peeps/svg?seed=${r.author.handle}`}
+                className="w-12 h-12 rounded-full border border-slate-700 bg-slate-800"
+                crossOrigin="anonymous" 
+              />
+              <div>
+                <div className="text-lg font-bold text-slate-100">{r.author.displayName}</div>
+                <div className="text-sm text-slate-400">@{r.author.handle}</div>
+              </div>
+            </div>
+
+            <div className="text-lg text-slate-300 leading-relaxed font-medium">
+              {r.description || "The ultimate Ninja CREAMi creation."}
+            </div>
+
+            <div className="grid grid-cols-2 gap-6 mt-2">
+               <div>
+                  <h3 className="text-violet-400 font-bold uppercase tracking-wider text-xs mb-3">Ingredients</h3>
+                  <ul className="text-slate-200 space-y-1 text-sm font-medium">
+                    {r.ingredients.slice(0, 6).map((ing, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="text-violet-500">•</span>
+                        {ing}
+                      </li>
+                    ))}
+                    {r.ingredients.length > 6 && <li className="text-slate-500 italic">+ more</li>}
+                  </ul>
+               </div>
+               <div>
+                  <h3 className="text-fuchsia-400 font-bold uppercase tracking-wider text-xs mb-3">Instructions</h3>
+                  <ul className="text-slate-200 space-y-1 text-sm font-medium">
+                    {r.steps.slice(0, 5).map((step, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="text-fuchsia-500 font-bold">{i + 1}.</span>
+                        <span className="line-clamp-2">{step}</span>
+                      </li>
+                    ))}
+                  </ul>
+               </div>
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-white/10 flex justify-between items-center opacity-80">
+               <div className="flex items-center gap-2">
+                 <NinjaStar className="w-5 h-5 text-violet-500" />
+                 <span className="font-bold text-slate-300">CreamiNinja.com</span>
+               </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

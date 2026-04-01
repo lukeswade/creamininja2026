@@ -201,18 +201,21 @@ export default function CreateRecipe() {
   return (
     <div className="grid gap-4">
       {/* Prominent Surprise Me section at the very top */}
-      <Card className="bg-gradient-to-r from-violet-950/40 to-fuchsia-950/40 border-violet-800/50">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+      <Card className="relative overflow-hidden border-violet-500/30 bg-gradient-to-r from-violet-900/30 to-fuchsia-900/30 shadow-[0_0_30px_rgba(139,92,246,0.15)]">
+        <div className="absolute inset-0 bg-mesh opacity-20 mix-blend-overlay" />
+        <div className="relative flex flex-col items-center justify-between gap-4 sm:flex-row">
           <div>
-            <div className="text-lg font-semibold text-violet-100">✨ Feeling lucky?</div>
+            <div className="flex items-center gap-2 text-xl font-bold text-violet-100">
+              <span className="animate-pulse">✨</span> Feeling lucky?
+            </div>
             <div className="mt-1 text-sm text-violet-300">Let AI create a completely random CREAMi recipe for you!</div>
           </div>
           <Button 
             onClick={surpriseMe} 
             disabled={surpriseBusy || aiBusy || busy}
-            className="bg-violet-600 hover:bg-violet-500 text-white px-6 py-3 text-base font-medium"
+            className="whitespace-nowrap rounded-2xl bg-violet-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-violet-500/30 transition-all active:scale-95 hover:bg-violet-500"
           >
-            {surpriseBusy ? "✨ Summoning..." : "🎲 Surprise Me!"}
+            {surpriseBusy ? "Summoning..." : "Surprise Me!"}
           </Button>
         </div>
       </Card>
@@ -230,7 +233,7 @@ export default function CreateRecipe() {
           <div>
             <label className="text-xs text-slate-400">Category *</label>
             <select
-              className="mt-1 w-full rounded-md border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100"
+              className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900/50 px-4 py-3 text-sm text-slate-100 shadow-inner backdrop-blur-sm transition-all focus:border-violet-500/30 focus:bg-slate-900/80 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             >
@@ -249,7 +252,7 @@ export default function CreateRecipe() {
           <div className="md:col-span-2">
             <label className="text-xs text-slate-400">Description <span className="text-slate-600">(optional)</span></label>
             <textarea
-              className="mt-1 w-full rounded-md border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400/30"
+              className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900/50 px-4 py-3 text-sm text-slate-100 shadow-inner backdrop-blur-sm transition-all focus:border-violet-500/30 focus:bg-slate-900/80 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
               rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -260,7 +263,7 @@ export default function CreateRecipe() {
           <div>
             <label className="text-xs text-slate-400">Visibility</label>
             <select
-              className="mt-1 w-full rounded-md border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100"
+              className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900/50 px-4 py-3 text-sm text-slate-100 shadow-inner backdrop-blur-sm transition-all focus:border-violet-500/30 focus:bg-slate-900/80 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
               value={visibility}
               onChange={(e) => setVisibility(e.target.value as any)}
             >
@@ -296,7 +299,7 @@ export default function CreateRecipe() {
           <div>
             <label className="text-xs text-slate-400">Ingredients <span className="text-slate-600">(optional, one per line)</span></label>
             <textarea
-              className="mt-1 w-full rounded-md border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400/30"
+              className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900/50 px-4 py-3 text-sm text-slate-100 shadow-inner backdrop-blur-sm transition-all focus:border-violet-500/30 focus:bg-slate-900/80 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
               rows={8}
               value={ingredientsText}
               onChange={(e) => setIngredientsText(e.target.value)}
@@ -306,7 +309,7 @@ export default function CreateRecipe() {
           <div>
             <label className="text-xs text-slate-400">Steps <span className="text-slate-600">(optional, one per line)</span></label>
             <textarea
-              className="mt-1 w-full rounded-md border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400/30"
+              className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900/50 px-4 py-3 text-sm text-slate-100 shadow-inner backdrop-blur-sm transition-all focus:border-violet-500/30 focus:bg-slate-900/80 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
               rows={8}
               value={stepsText}
               onChange={(e) => setStepsText(e.target.value)}
@@ -328,7 +331,7 @@ export default function CreateRecipe() {
         <div className="text-sm font-semibold">AI assist</div>
         <p className="mt-1 text-sm text-slate-400">List ingredients and get a CREAMi-ready recipe draft.</p>
         <textarea
-          className="mt-3 w-full rounded-md border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400/30"
+          className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900/50 px-4 py-3 text-sm text-slate-100 shadow-inner backdrop-blur-sm transition-all focus:border-violet-500/30 focus:bg-slate-900/80 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
           rows={5}
           value={aiIngredients}
           onChange={(e) => setAiIngredients(e.target.value)}
@@ -340,12 +343,14 @@ export default function CreateRecipe() {
           </Button>
         </div>
 
-        <div className="mt-6 border-t border-slate-800 pt-4">
-          <div className="text-xs font-medium text-slate-300">Or generate from a photo</div>
-          <p className="mt-1 text-sm text-slate-400">Upload a photo of ingredients; the AI will infer a recipe.</p>
+        <div className="mt-6 border-t border-white/10 pt-6">
+          <div className="flex items-center gap-2 text-base font-bold text-slate-100">
+            <span className="text-xl">📸</span> Generate from a photo
+          </div>
+          <p className="mt-1 text-sm text-slate-400">Snap or upload a photo of your ingredients; the AI will invent a recipe instantly.</p>
 
           <input
-            className="mt-3 block w-full text-sm text-slate-300 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-950 hover:file:bg-white"
+            className="mt-4 block w-full text-sm text-slate-300 file:mr-4 file:rounded-xl file:border file:border-white/10 file:bg-slate-800/50 file:px-5 file:py-2.5 file:text-sm file:font-semibold file:text-slate-200 file:backdrop-blur-sm file:transition-all file:active:scale-95 hover:file:bg-slate-700/50 file:cursor-pointer"
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onChange={(e) => {
@@ -355,9 +360,9 @@ export default function CreateRecipe() {
           />
           {aiPhotoKey && <div className="mt-2 text-xs text-slate-400">Uploaded for AI: {aiPhotoKey}</div>}
 
-          <div className="mt-3">
-            <Button onClick={aiGenerateFromPhoto} disabled={aiBusy || !aiPhotoKey}>
-              {aiBusy ? "Generating..." : "Generate from photo"}
+          <div className="mt-4">
+            <Button onClick={aiGenerateFromPhoto} disabled={aiBusy || !aiPhotoKey} className="w-full sm:w-auto gap-2">
+              📸 {aiBusy ? "Analyzing photo..." : "Generate from photo"}
             </Button>
           </div>
         </div>

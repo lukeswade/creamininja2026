@@ -1,19 +1,46 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Card } from "../components/Card";
 import { NinjaStar } from "../components/NinjaStar";
-import { Sparkles, Users, Lock, Zap } from "lucide-react";
+import { Sparkles, Users, Lock, Zap, ArrowRight } from "lucide-react";
 import { useAuth } from "../lib/auth";
 
 export default function Landing() {
   const { user } = useAuth();
 
+  const containerResp = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const itemResp = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  };
+
   return (
     <div className="grid gap-8">
       {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-violet-950/30 p-8 md:p-12">
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-violet-500/10 blur-3xl" />
-        <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-fuchsia-500/10 blur-3xl" />
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-slate-900/40 p-8 md:p-16 backdrop-blur-2xl shadow-2xl shadow-black/50"
+      >
+        <motion.div 
+          animate={{ rotate: 360 }}
+          transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+          className="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-violet-600/20 blur-3xl" 
+        />
+        <motion.div 
+          animate={{ rotate: -360 }}
+          transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+          className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-fuchsia-600/20 blur-3xl" 
+        />
         
         <div className="relative">
           <div className="flex items-center gap-3">
@@ -33,34 +60,41 @@ export default function Landing() {
           <div className="mt-8 flex flex-wrap gap-4">
             <Link 
               to="/feed" 
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-6 py-3 font-medium text-white shadow-lg shadow-violet-500/25 transition hover:shadow-violet-500/40 hover:brightness-110"
+              className="group inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-8 py-4 font-semibold text-white shadow-xl shadow-violet-500/25 transition-all active:scale-95 hover:shadow-violet-500/40 hover:brightness-110"
             >
-              <Zap className="h-4 w-4" />
+              <Zap className="h-5 w-5" />
               Explore recipes
             </Link>
             {user ? (
               <Link 
                 to="/create" 
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/50 px-6 py-3 font-medium text-slate-100 backdrop-blur transition hover:border-slate-600 hover:bg-slate-800/50"
+                className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-800/50 px-8 py-4 font-semibold text-slate-100 backdrop-blur transition-all active:scale-95 hover:border-white/20 hover:bg-slate-700/50"
               >
                 Add recipe
               </Link>
             ) : (
               <Link 
                 to="/register" 
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/50 px-6 py-3 font-medium text-slate-100 backdrop-blur transition hover:border-slate-600 hover:bg-slate-800/50"
+                className="group inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-800/50 px-8 py-4 font-semibold text-slate-100 backdrop-blur-md transition-all active:scale-95 hover:border-white/20 hover:bg-slate-700/50"
               >
                 Create free account
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Feature Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="group relative overflow-hidden">
-          <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-violet-500/10 transition group-hover:bg-violet-500/20" />
+      <motion.div 
+        variants={containerResp}
+        initial="hidden"
+        animate="show"
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+      >
+        <motion.div variants={itemResp}>
+          <Card className="group relative overflow-hidden h-full">
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-violet-500/10 blur-xl transition duration-500 group-hover:bg-violet-500/30" />
           <div className="relative">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-500/20 text-violet-400">
               <Lock className="h-5 w-5" />
@@ -70,10 +104,12 @@ export default function Landing() {
               Keep recipes private, share with friends only, or go fully public. You're in control.
             </p>
           </div>
-        </Card>
+          </Card>
+        </motion.div>
 
-        <Card className="group relative overflow-hidden">
-          <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-fuchsia-500/10 transition group-hover:bg-fuchsia-500/20" />
+        <motion.div variants={itemResp}>
+          <Card className="group relative overflow-hidden h-full">
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-fuchsia-500/10 blur-xl transition duration-500 group-hover:bg-fuchsia-500/30" />
           <div className="relative">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-fuchsia-500/20 text-fuchsia-400">
               <Users className="h-5 w-5" />
@@ -83,10 +119,12 @@ export default function Landing() {
               Build your ninja network. Share secret recipes with your trusted inner circle.
             </p>
           </div>
-        </Card>
+          </Card>
+        </motion.div>
 
-        <Card className="group relative overflow-hidden">
-          <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-500/10 transition group-hover:bg-amber-500/20" />
+        <motion.div variants={itemResp}>
+          <Card className="group relative overflow-hidden h-full">
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-amber-500/10 blur-xl transition duration-500 group-hover:bg-amber-500/30" />
           <div className="relative">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20 text-amber-400">
               <Sparkles className="h-5 w-5" />
@@ -96,10 +134,12 @@ export default function Landing() {
               List ingredients or snap a photo—AI generates a perfect CREAMi recipe instantly.
             </p>
           </div>
-        </Card>
+          </Card>
+        </motion.div>
 
-        <Card className="group relative overflow-hidden">
-          <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-emerald-500/10 transition group-hover:bg-emerald-500/20" />
+        <motion.div variants={itemResp}>
+          <Card className="group relative overflow-hidden h-full">
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-emerald-500/10 blur-xl transition duration-500 group-hover:bg-emerald-500/30" />
           <div className="relative">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
               <NinjaStar className="h-5 w-5" />
@@ -109,12 +149,20 @@ export default function Landing() {
               Like a recipe? Throw it a star! 🥷 Watch the best creations rise to the top.
             </p>
           </div>
-        </Card>
-      </div>
+          </Card>
+        </motion.div>
+      </motion.div>
 
       {/* CTA Section */}
-      <Card className="bg-gradient-to-r from-violet-950/50 to-fuchsia-950/50 border-violet-800/50 text-center">
-        <div className="py-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ delay: 0.2 }}
+      >
+        <Card className="bg-slate-900/60 border border-white/10 text-center relative overflow-hidden">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-full bg-gradient-to-r from-violet-600/20 to-fuchsia-600/20 blur-[100px]" />
+          <div className="relative py-8">
           {user ? (
             <>
               <h2 className="text-2xl font-bold text-slate-100">Get started?</h2>
@@ -122,7 +170,7 @@ export default function Landing() {
               <div className="mt-6 flex justify-center gap-4">
                 <Link 
                   to="/create" 
-                  className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 font-medium text-slate-950 transition hover:bg-slate-100"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-white px-8 py-4 font-semibold text-slate-950 transition-all active:scale-95 hover:bg-slate-100 hover:shadow-xl hover:shadow-white/10"
                 >
                   <NinjaStar className="h-4 w-4" />
                   Ninjafy
@@ -136,15 +184,16 @@ export default function Landing() {
               <div className="mt-6 flex justify-center gap-4">
                 <Link 
                   to="/register" 
-                  className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 font-medium text-slate-950 transition hover:bg-slate-100"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-white px-8 py-4 font-semibold text-slate-950 transition-all active:scale-95 hover:bg-slate-100 hover:shadow-xl hover:shadow-white/10"
                 >
                   Get started free
                 </Link>
               </div>
             </>
           )}
-        </div>
-      </Card>
+          </div>
+        </Card>
+      </motion.div>
     </div>
   );
 }

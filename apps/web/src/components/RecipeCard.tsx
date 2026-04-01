@@ -60,19 +60,19 @@ export function RecipeCard({ r, onMutate }: { r: RecipeSummary; onMutate?: () =>
   return (
     <Link
       to={`/recipes/${r.id}`}
-      className="group block rounded-2xl border border-slate-800 bg-slate-900/50 transition hover:border-slate-700 hover:bg-slate-900/80"
+      className="group block overflow-hidden rounded-2xl border border-white/5 bg-slate-900/40 p-0 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-slate-900/60 hover:shadow-xl hover:shadow-violet-500/10"
     >
       <div className="flex flex-col sm:flex-row">
         {/* Image */}
         {r.imageKey && (
           <div className="relative h-48 w-full overflow-hidden sm:h-auto sm:w-48 sm:flex-shrink-0">
             <img
-              className="h-full w-full object-cover transition group-hover:scale-105 sm:rounded-l-2xl"
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110 sm:rounded-l-2xl"
               src={`${API_BASE}/uploads/file/${encodeURIComponent(r.imageKey)}`}
               alt={r.title}
               loading="lazy"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent sm:bg-gradient-to-r" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent sm:bg-gradient-to-r" />
           </div>
         )}
 
@@ -101,10 +101,10 @@ export function RecipeCard({ r, onMutate }: { r: RecipeSummary; onMutate?: () =>
                 onClick={toggleStar}
                 disabled={!user || starring}
                 title={!user ? "Log in to throw stars" : r.viewerStarred ? "Take back your star" : "Throw a star! 🥷"}
-                className={`group/star relative flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                className={`group/star relative flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold transition-all active:scale-95 ${
                   r.viewerStarred
-                    ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
-                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                    ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/25"
+                    : "bg-slate-800/80 text-slate-300 hover:bg-slate-700"
                 } ${!user ? "cursor-default opacity-60" : ""}`}
               >
                 <NinjaStar 
