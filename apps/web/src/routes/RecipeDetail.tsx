@@ -173,6 +173,9 @@ export default function RecipeDetail() {
               className="h-full w-full object-cover"
               src={`${API_BASE}/uploads/file/${encodeURIComponent(r.imageKey)}`}
               alt={r.title}
+              onError={(e) => {
+                e.currentTarget.src = "https://placehold.co/1200x800/1e1e2f/8b5cf6?text=CREAMi+Creation";
+              }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
           </div>
@@ -336,7 +339,14 @@ export default function RecipeDetail() {
         <div className="bg-slate-900/90 rounded-3xl overflow-hidden border border-white/10 flex flex-col shadow-2xl">
           {r.imageKey ? (
             <div className="h-[400px] w-full shrink-0 relative">
-              <img src={`${API_BASE}/uploads/file/${encodeURIComponent(r.imageKey)}`} className="w-full h-full object-cover" crossOrigin="anonymous" />
+              <img 
+                src={`${API_BASE}/uploads/file/${encodeURIComponent(r.imageKey)}`} 
+                className="w-full h-full object-cover" 
+                crossOrigin="anonymous" 
+                onError={(e) => {
+                  e.currentTarget.src = "https://placehold.co/1200x800/1e1e2f/8b5cf6?text=CREAMi+Creation";
+                }}
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
             </div>
           ) : (

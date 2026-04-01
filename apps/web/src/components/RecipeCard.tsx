@@ -70,6 +70,9 @@ export function RecipeCard({ r, onMutate }: { r: RecipeSummary; onMutate?: () =>
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110 sm:rounded-l-2xl"
               src={`${API_BASE}/uploads/file/${encodeURIComponent(r.imageKey)}`}
               alt={r.title}
+              onError={(e) => {
+                e.currentTarget.src = "https://placehold.co/600x600/1e1e2f/8b5cf6?text=CREAMi+Creation";
+              }}
               loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent sm:bg-gradient-to-r" />

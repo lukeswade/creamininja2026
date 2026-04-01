@@ -258,6 +258,9 @@ function GalleryItem({ r, onMutate }: { r: RecipeSummary; onMutate?: () => void 
       <img
         src={`${API_BASE}/uploads/file/${encodeURIComponent(r.imageKey!)}`}
         alt={r.title}
+        onError={(e) => {
+          e.currentTarget.src = "https://placehold.co/600x600/1e1e2f/8b5cf6?text=CREAMi+Creation";
+        }}
         className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
         loading="lazy"
       />

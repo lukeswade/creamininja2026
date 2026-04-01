@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "../components/Card";
 import { Input } from "../components/Input";
 import { Button } from "../components/Button";
@@ -21,6 +22,7 @@ type SurpriseDraftResponse =
 
 export default function CreateRecipe() {
   const { csrfToken } = useAuth();
+  const nav = useNavigate();
 
   const [title, setTitle] = React.useState("");
   const [description, setDescription] = React.useState("");
@@ -94,14 +96,16 @@ export default function CreateRecipe() {
         .map((s) => s.trim())
         .filter(Boolean);
 
-      // basic guard to avoid accidental empty category submissions
       if (!category.trim()) {
         throw new Error("Please choose a category.");
       }
 
-      await api("/recipes", {
+      const res = await fetch(`${API_BASE}/recipes`, {
         method: "POST",
-        csrf: csrfToken || "",
+        headers: {
+          "Content-Type": "application/json",
+          "x-csrf-token": csrfToken || ""
+        },
         body: JSON.stringify({
           title,
           description: description || null,
@@ -112,6 +116,11 @@ export default function CreateRecipe() {
           imageKey
         })
       });
+      
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error || "Failed to save recipe");
+      }
 
       setTitle("");
       setDescription("");
@@ -119,6 +128,15 @@ export default function CreateRecipe() {
       setIngredientsText("");
       setStepsText("");
       setImageKey(null);
+
+      // Extract the ID and navigate directly to the new recipe
+      const data = await res.json() as { ok: boolean; recipe?: { id: string } };
+      if (data.ok && data.recipe?.id) {
+        nav("/recipes/" + data.recipe.id);
+      } else {
+        // Fallback if the API doesn't return the structured ID properly
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     } catch (e: any) {
       setErr(e.message);
     } finally {
@@ -249,6 +267,7 @@ export default function CreateRecipe() {
               </Button>
             </div>
           </div>
+          {err && <div className="mt-2 rounded-xl border border-red-900/50 bg-red-950/40 px-4 py-3 text-sm text-red-200">{err}</div>}
         </div>
       </div>
 

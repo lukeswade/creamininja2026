@@ -191,12 +191,26 @@ router.post("/", zValidator("json", RecipeCreateSchema), async (c) => {
       const response = await c.env.AI.run("@cf/stabilityai/stable-diffusion-xl-base-1.0", { prompt });
       
       if (response) {
+        let streamOrBuffer: any = response;
+        
+        // Cloudflare might occasionally return a base64 string in JSON envelope instead of raw buffer
+        if (typeof response === "object" && "image" in response) {
+          const binaryString = atob((response as any).image);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+          }
+          streamOrBuffer = bytes.buffer;
+        } else if (response instanceof Uint8Array) {
+          streamOrBuffer = response.buffer;
+        }
+
         const key = `auto-${newId("img")}.png`;
-        await c.env.UPLOADS.put(key, response as ArrayBuffer, { httpMetadata: { contentType: "image/png" } });
+        await c.env.UPLOADS.put(key, streamOrBuffer, { httpMetadata: { contentType: "image/png" } });
         imageKey = key;
       }
-    } catch (err) {
-      console.error("Failed to auto-generate edge image:", err);
+    } catch (err: any) {
+      console.error("Failed to auto-generate edge image:", err.message || err);
     }
   }
 
