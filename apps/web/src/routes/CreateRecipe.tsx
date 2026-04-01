@@ -100,12 +100,9 @@ export default function CreateRecipe() {
         throw new Error("Please choose a category.");
       }
 
-      const res = await fetch(`${API_BASE}/recipes`, {
+      const data = await api<{ ok: boolean; recipe?: { id: string } }>("/recipes", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-csrf-token": csrfToken || ""
-        },
+        csrf: csrfToken || "",
         body: JSON.stringify({
           title,
           description: description || null,
@@ -116,11 +113,6 @@ export default function CreateRecipe() {
           imageKey
         })
       });
-      
-      if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.error || "Failed to save recipe");
-      }
 
       setTitle("");
       setDescription("");
@@ -130,7 +122,6 @@ export default function CreateRecipe() {
       setImageKey(null);
 
       // Extract the ID and navigate directly to the new recipe
-      const data = await res.json() as { ok: boolean; recipe?: { id: string } };
       if (data.ok && data.recipe?.id) {
         nav("/recipes/" + data.recipe.id);
       } else {
