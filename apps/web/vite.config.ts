@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
-const PWA_VERSION = "2026-04-02-6";
+const PWA_VERSION = "2026-04-02-7";
 
 export default defineConfig({
   plugins: [

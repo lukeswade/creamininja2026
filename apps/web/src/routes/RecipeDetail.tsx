@@ -10,7 +10,6 @@ import { Avatar } from "../components/Avatar";
 import { ShareWithFriendsModal } from "../components/ShareWithFriendsModal";
 import { Skeleton } from "../components/Skeleton";
 import { ChefHat, Clock, Eye, EyeOff, Users, Share2, ArrowLeft, Loader2, Pencil, Save } from "lucide-react";
-import * as htmlToImage from "html-to-image";
 
 type Recipe = {
   id: string;
@@ -48,7 +47,6 @@ export default function RecipeDetail() {
   const [editing, setEditing] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [editErr, setEditErr] = React.useState<string | null>(null);
-  const exportRef = React.useRef<HTMLDivElement>(null);
   const [editForm, setEditForm] = React.useState({
     title: "",
     description: "",
@@ -201,37 +199,17 @@ export default function RecipeDetail() {
   }
 
   async function exportAsImage() {
-    if (!exportRef.current || exporting || !r) return;
+    if (exporting || !r) return;
     setExporting(true);
-    let mountedNode: HTMLDivElement | null = null;
     try {
-      mountedNode = exportRef.current.cloneNode(true) as HTMLDivElement;
-      mountedNode.style.position = "fixed";
-      mountedNode.style.left = "16px";
-      mountedNode.style.top = "16px";
-      mountedNode.style.zIndex = "9999";
-      mountedNode.style.opacity = "0.01";
-      mountedNode.style.pointerEvents = "none";
-      mountedNode.style.transform = "translateY(-24px)";
-      document.body.appendChild(mountedNode);
-
-      await inlineExportImages(mountedNode);
-      await waitForPaint();
-
-      const dataUrl = await htmlToImage.toPng(mountedNode, {
-        cacheBust: true,
-        pixelRatio: 2,
-        backgroundColor: "#020617"
-      });
       const link = document.createElement("a");
       link.download = `CreamiNinja-${r.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.png`;
-      link.href = dataUrl;
+      link.href = await renderRecipeExport(r);
       link.click();
     } catch (err) {
       console.error(err);
       alert("Failed to export image");
     } finally {
-      mountedNode?.remove();
       setExporting(false);
     }
   }
@@ -521,93 +499,6 @@ export default function RecipeDetail() {
         />
       )}
 
-      {/* Hidden Export Node (rendered under the layout to prevent blank paints on Safari/Chrome) */}
-      <div 
-        ref={exportRef}
-        className="fixed left-4 top-4 z-[9999] w-[600px] pointer-events-none p-8 opacity-[0.01]"
-        style={{ transform: "translateY(-24px)" }}
-      >
-        <div className="bg-slate-900/90 rounded-3xl overflow-hidden border border-white/10 flex flex-col shadow-2xl">
-          {r.imageKey ? (
-            <div className="h-[400px] w-full shrink-0 relative">
-              <img 
-                src={`${API_BASE}/uploads/file/${encodeURIComponent(r.imageKey)}`} 
-                className="w-full h-full object-cover" 
-                crossOrigin="anonymous" 
-                onError={(e) => {
-                  e.currentTarget.src = "https://placehold.co/1200x800/1e1e2f/8b5cf6?text=CREAMi+Creation";
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
-            </div>
-          ) : (
-            <div className="pt-8" />
-          )}
-
-          <div className="p-8 pb-10 flex flex-col gap-6">
-            <div>
-              <div className="inline-flex rounded-full bg-violet-600/20 px-3 py-1 text-sm font-semibold text-violet-300">
-                {r.category}
-              </div>
-              <h1 className="mt-3 text-4xl font-extrabold text-white leading-tight">
-                {r.title}
-              </h1>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <Avatar
-                handle={r.author.handle}
-                avatarKey={r.author.avatarKey}
-                name={r.author.displayName}
-                size={48}
-                className="border-slate-700 bg-slate-800"
-              />
-              <div>
-                <div className="text-lg font-bold text-slate-100">{r.author.displayName}</div>
-                <div className="text-sm text-slate-400">@{r.author.handle}</div>
-              </div>
-            </div>
-
-            <div className="space-y-2 text-lg font-medium leading-relaxed text-slate-300">
-              <div>{descriptionParts.flavor || r.description || "The ultimate Ninja CREAMi creation."}</div>
-              {descriptionParts.macros && <div className="text-slate-400">{descriptionParts.macros}</div>}
-            </div>
-
-            <div className="grid grid-cols-2 gap-6 mt-2">
-               <div>
-                  <h3 className="text-violet-400 font-bold uppercase tracking-wider text-xs mb-3">Ingredients</h3>
-                  <ul className="text-slate-200 space-y-1 text-sm font-medium">
-                    {r.ingredients.slice(0, 6).map((ing, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <span className="text-violet-500">•</span>
-                        {ing}
-                      </li>
-                    ))}
-                    {r.ingredients.length > 6 && <li className="text-slate-500 italic">+ more</li>}
-                  </ul>
-               </div>
-               <div>
-                  <h3 className="text-fuchsia-400 font-bold uppercase tracking-wider text-xs mb-3">Instructions</h3>
-                  <ul className="text-slate-200 space-y-1 text-sm font-medium">
-                    {r.steps.slice(0, 5).map((step, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <span className="text-fuchsia-500 font-bold">{i + 1}.</span>
-                        <span className="line-clamp-2">{step}</span>
-                      </li>
-                    ))}
-                  </ul>
-               </div>
-            </div>
-
-            <div className="mt-6 pt-6 border-t border-white/10 flex justify-between items-center opacity-80">
-               <div className="flex items-center gap-2">
-                 <NinjaStar className="w-5 h-5 text-violet-500" />
-                 <span className="font-bold text-slate-300">CreamiNinja.com</span>
-               </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -627,44 +518,264 @@ function splitDescriptionAndMacros(description?: string | null) {
   };
 }
 
-function waitForPaint() {
-  return new Promise<void>((resolve) => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => resolve());
-    });
-  });
-}
+async function renderRecipeExport(recipe: Recipe) {
+  const width = 1200;
+  const height = 1600;
+  const padding = 56;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas unavailable");
 
-async function inlineExportImages(node: HTMLElement) {
-  const images = Array.from(node.querySelectorAll("img"));
-  await Promise.all(
-    images.map(async (img) => {
-      const src = img.currentSrc || img.src;
-      if (!src) return;
+  const descriptionParts = splitDescriptionAndMacros(recipe.description);
 
-      try {
-        const res = await fetch(
-          src,
-          src.startsWith(API_BASE) ? { credentials: "include" } : undefined
-        );
-        if (!res.ok) throw new Error(`Image fetch failed: ${res.status}`);
+  const bg = ctx.createLinearGradient(0, 0, width, height);
+  bg.addColorStop(0, "#0b1024");
+  bg.addColorStop(0.45, "#111633");
+  bg.addColorStop(1, "#190d2b");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, width, height);
 
-        const blob = await res.blob();
-        img.src = await blobToDataUrl(blob);
-        img.removeAttribute("srcset");
-        await img.decode().catch(() => undefined);
-      } catch (err) {
-        console.warn("export_image_inline_failed", src, err);
-      }
-    })
+  const imageHeight = 620;
+  if (recipe.imageKey) {
+    try {
+      const image = await loadExportImage(`${API_BASE}/uploads/file/${encodeURIComponent(recipe.imageKey)}`);
+      drawCoverImage(ctx, image, 0, 0, width, imageHeight);
+    } catch (err) {
+      console.warn("export_image_load_failed", err);
+      drawImageFallback(ctx, width, imageHeight);
+    }
+  } else {
+    drawImageFallback(ctx, width, imageHeight);
+  }
+
+  const imageFade = ctx.createLinearGradient(0, imageHeight - 160, 0, imageHeight);
+  imageFade.addColorStop(0, "rgba(2,6,23,0)");
+  imageFade.addColorStop(1, "rgba(2,6,23,0.95)");
+  ctx.fillStyle = imageFade;
+  ctx.fillRect(0, imageHeight - 160, width, 160);
+
+  const panelY = imageHeight - 16;
+  roundRect(ctx, 24, panelY, width - 48, height - panelY - 24, 32, "rgba(10,14,33,0.96)", "rgba(255,255,255,0.08)");
+
+  ctx.fillStyle = "#c4b5fd";
+  roundRect(ctx, padding, panelY + 38, 132, 34, 17, "rgba(124,58,237,0.22)");
+  ctx.font = "600 20px ui-sans-serif, system-ui, sans-serif";
+  ctx.fillText(recipe.category, padding + 18, panelY + 60);
+
+  ctx.fillStyle = "#f8fafc";
+  ctx.font = "700 54px ui-sans-serif, system-ui, sans-serif";
+  drawWrappedText(ctx, recipe.title, padding, panelY + 128, width - padding * 2 - 180, 62, 2);
+
+  ctx.fillStyle = "#e2e8f0";
+  ctx.font = "600 22px ui-sans-serif, system-ui, sans-serif";
+  ctx.fillText(recipe.author.displayName, padding, panelY + 188);
+  ctx.fillStyle = "#94a3b8";
+  ctx.font = "500 20px ui-sans-serif, system-ui, sans-serif";
+  ctx.fillText(`@${recipe.author.handle}`, padding + 190, panelY + 188);
+
+  const flavorY = panelY + 250;
+  ctx.fillStyle = "#e2e8f0";
+  ctx.font = "500 28px ui-sans-serif, system-ui, sans-serif";
+  const flavorBottom = drawWrappedText(
+    ctx,
+    descriptionParts.flavor || recipe.description || "The ultimate Ninja CREAMi creation.",
+    padding,
+    flavorY,
+    width - padding * 2,
+    40,
+    3
   );
+
+  let textBlockY = flavorBottom + 12;
+  if (descriptionParts.macros) {
+    ctx.fillStyle = "#a5b4fc";
+    ctx.font = "500 24px ui-sans-serif, system-ui, sans-serif";
+    textBlockY = drawWrappedText(ctx, descriptionParts.macros, padding, textBlockY, width - padding * 2, 34, 2) + 8;
+  }
+
+  const columnTop = Math.max(textBlockY + 36, panelY + 410);
+  const columnWidth = (width - padding * 2 - 32) / 2;
+  roundRect(ctx, padding, columnTop, columnWidth, height - columnTop - 110, 28, "rgba(15,23,42,0.82)", "rgba(255,255,255,0.06)");
+  roundRect(ctx, padding + columnWidth + 32, columnTop, columnWidth, height - columnTop - 110, 28, "rgba(15,23,42,0.82)", "rgba(255,255,255,0.06)");
+
+  ctx.fillStyle = "#e9d5ff";
+  ctx.font = "700 30px ui-sans-serif, system-ui, sans-serif";
+  ctx.fillText("Ingredients", padding + 28, columnTop + 52);
+  ctx.fillStyle = "#f1f5f9";
+  ctx.font = "500 24px ui-sans-serif, system-ui, sans-serif";
+  drawBulletedList(ctx, recipe.ingredients.slice(0, 7), padding + 28, columnTop + 100, columnWidth - 56, 38, "#8b5cf6");
+
+  const stepsX = padding + columnWidth + 60;
+  ctx.fillStyle = "#f5d0fe";
+  ctx.font = "700 30px ui-sans-serif, system-ui, sans-serif";
+  ctx.fillText("Instructions", stepsX, columnTop + 52);
+  ctx.fillStyle = "#f1f5f9";
+  ctx.font = "500 24px ui-sans-serif, system-ui, sans-serif";
+  drawNumberedList(ctx, recipe.steps.slice(0, 6), stepsX, columnTop + 100, columnWidth - 56, 38, "#d946ef");
+
+  ctx.fillStyle = "#94a3b8";
+  ctx.font = "600 22px ui-sans-serif, system-ui, sans-serif";
+  ctx.fillText("CreamiNinja.com", padding, height - 46);
+
+  return canvas.toDataURL("image/png");
 }
 
-function blobToDataUrl(blob: Blob) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
+async function loadExportImage(src: string) {
+  const res = await fetch(src, { credentials: "include" });
+  if (!res.ok) throw new Error(`Image fetch failed: ${res.status}`);
+  const blob = await res.blob();
+  const objectUrl = URL.createObjectURL(blob);
+
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Image decode failed"));
+      img.src = objectUrl;
+    });
+    return image;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+function drawCoverImage(ctx: CanvasRenderingContext2D, image: CanvasImageSource, x: number, y: number, width: number, height: number) {
+  const imgWidth = "width" in image ? image.width : width;
+  const imgHeight = "height" in image ? image.height : height;
+  const scale = Math.max(width / imgWidth, height / imgHeight);
+  const drawWidth = imgWidth * scale;
+  const drawHeight = imgHeight * scale;
+  const offsetX = x + (width - drawWidth) / 2;
+  const offsetY = y + (height - drawHeight) / 2;
+  ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+}
+
+function drawImageFallback(ctx: CanvasRenderingContext2D, width: number, height: number) {
+  const grad = ctx.createLinearGradient(0, 0, width, height);
+  grad.addColorStop(0, "#111827");
+  grad.addColorStop(1, "#0f172a");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = "#8b5cf6";
+  ctx.font = "700 68px ui-sans-serif, system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("CREAMi Creation", width / 2, height / 2);
+  ctx.textAlign = "left";
+}
+
+function drawWrappedText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  lineHeight: number,
+  maxLines: number
+) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let line = "";
+
+  for (const word of words) {
+    const candidate = line ? `${line} ${word}` : word;
+    if (ctx.measureText(candidate).width <= maxWidth) {
+      line = candidate;
+      continue;
+    }
+    if (line) lines.push(line);
+    line = word;
+    if (lines.length === maxLines - 1) break;
+  }
+  if (line && lines.length < maxLines) lines.push(line);
+
+  if (words.length && lines.length === maxLines) {
+    const usedWords = lines.join(" ").split(/\s+/).length;
+    if (usedWords < words.length) {
+      let trimmed = lines[maxLines - 1];
+      while (ctx.measureText(`${trimmed}…`).width > maxWidth && trimmed.includes(" ")) {
+        trimmed = trimmed.split(" ").slice(0, -1).join(" ");
+      }
+      lines[maxLines - 1] = `${trimmed}…`;
+    }
+  }
+
+  lines.forEach((currentLine, index) => {
+    ctx.fillText(currentLine, x, y + index * lineHeight);
   });
+
+  return y + lines.length * lineHeight;
+}
+
+function drawBulletedList(
+  ctx: CanvasRenderingContext2D,
+  items: string[],
+  x: number,
+  y: number,
+  maxWidth: number,
+  lineHeight: number,
+  bulletColor: string
+) {
+  let cursorY = y;
+  for (const item of items) {
+    ctx.fillStyle = bulletColor;
+    ctx.beginPath();
+    ctx.arc(x + 8, cursorY - 8, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#f1f5f9";
+    cursorY = drawWrappedText(ctx, item, x + 28, cursorY, maxWidth - 28, lineHeight, 2) + 10;
+  }
+}
+
+function drawNumberedList(
+  ctx: CanvasRenderingContext2D,
+  items: string[],
+  x: number,
+  y: number,
+  maxWidth: number,
+  lineHeight: number,
+  numberColor: string
+) {
+  let cursorY = y;
+  items.forEach((item, index) => {
+    ctx.fillStyle = numberColor;
+    ctx.beginPath();
+    ctx.arc(x + 14, cursorY - 10, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "700 18px ui-sans-serif, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(String(index + 1), x + 14, cursorY - 3);
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#f1f5f9";
+    ctx.font = "500 24px ui-sans-serif, system-ui, sans-serif";
+    cursorY = drawWrappedText(ctx, item, x + 42, cursorY, maxWidth - 42, lineHeight, 2) + 10;
+  });
+}
+
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+  fill: string,
+  stroke?: string
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + width, y, x + width, y + height, radius);
+  ctx.arcTo(x + width, y + height, x, y + height, radius);
+  ctx.arcTo(x, y + height, x, y, radius);
+  ctx.arcTo(x, y, x + width, y, radius);
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+  if (stroke) {
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
 }
