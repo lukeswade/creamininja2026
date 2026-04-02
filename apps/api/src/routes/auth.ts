@@ -278,9 +278,9 @@ async function uniqueHandle(env: Env, base: string) {
 }
 
 async function getUser(env: Env, userId: string) {
-  return await first<{ id: string; email: string; displayName: string; handle: string; avatarKey: string | null; createdAt: string }>(
+  return await first<{ id: string; email: string; displayName: string; handle: string; avatarKey: string | null; bannerKey: string | null; createdAt: string }>(
     env,
-    `SELECT id, email, display_name as displayName, handle, avatar_key as avatarKey, created_at as createdAt
+    `SELECT id, email, display_name as displayName, handle, avatar_key as avatarKey, banner_key as bannerKey, created_at as createdAt
      FROM users WHERE id = ?`,
     [userId]
   );

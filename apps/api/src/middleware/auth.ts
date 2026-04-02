@@ -6,7 +6,7 @@ import { first } from "../db/sql";
 import { unauthorized } from "../util/http";
 
 export type AuthedVars = {
-  user: { id: string; email: string; displayName: string; handle: string; avatarKey: string | null };
+  user: { id: string; email: string; displayName: string; handle: string; avatarKey: string | null; bannerKey: string | null };
   session: { id: string; csrfToken: string };
 };
 
@@ -25,10 +25,11 @@ export const authOptional = createMiddleware<{ Bindings: Env; Variables: Partial
     display_name: string;
     handle: string;
     avatar_key: string | null;
+    banner_key: string | null;
   }>(
     c.env,
     `SELECT s.id as session_id, s.csrf_token, s.expires_at,
-            u.id as user_id, u.email, u.display_name, u.handle, u.avatar_key
+            u.id as user_id, u.email, u.display_name, u.handle, u.avatar_key, u.banner_key
      FROM sessions s
      JOIN users u ON u.id = s.user_id
      WHERE s.token_hash = ?`,
@@ -38,7 +39,14 @@ export const authOptional = createMiddleware<{ Bindings: Env; Variables: Partial
   if (!row) return next();
   if (new Date(row.expires_at).getTime() < Date.now()) return next();
 
-  c.set("user", { id: row.user_id, email: row.email, displayName: row.display_name, handle: row.handle, avatarKey: row.avatar_key });
+  c.set("user", {
+    id: row.user_id,
+    email: row.email,
+    displayName: row.display_name,
+    handle: row.handle,
+    avatarKey: row.avatar_key,
+    bannerKey: row.banner_key
+  });
   c.set("session", { id: row.session_id, csrfToken: row.csrf_token });
   return next();
 });

@@ -6,6 +6,18 @@
       "version": "0000",
       "when": "2026-01-03T00:00:00.000Z",
       "tag": "init"
+    },
+    {
+      "idx": 1,
+      "version": "0001",
+      "when": "2026-03-31T22:40:00.000Z",
+      "tag": "oauth_accounts"
+    },
+    {
+      "idx": 2,
+      "version": "0002",
+      "when": "2026-04-02T00:00:00.000Z",
+      "tag": "user_banners"
     }
   ]
 }

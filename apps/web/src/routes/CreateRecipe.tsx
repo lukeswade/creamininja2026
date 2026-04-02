@@ -221,22 +221,25 @@ export default function CreateRecipe() {
               Describe your wildest idea. The AI will instantly engineer the perfect CREAMi recipe, complete with precise macros and hardware instructions.
             </p>
           </div>
-          <div className="relative w-full shadow-2xl rounded-2xl">
+          <div className="w-full rounded-2xl shadow-2xl">
             <textarea
               className="w-full rounded-2xl border-2 border-violet-500/50 bg-slate-950/60 px-5 py-5 text-base text-slate-100 shadow-inner backdrop-blur-md transition-all focus:border-violet-400 focus:bg-slate-950/80 focus:outline-none focus:ring-4 focus:ring-violet-500/30 placeholder-slate-500 min-h-[120px]"
               value={aiDescription}
               onChange={(e) => setAiDescription(e.target.value)}
               placeholder="e.g., A low-calorie frozen irish coffee with whey protein, or a spicy mango margarita sorbet..."
             />
-            <div className="absolute bottom-3 right-3">
-              <Button 
-                onClick={aiGenerateFromDescription} 
-                disabled={aiBusy || !aiDescription.trim() || surpriseBusy || busy} 
-                className="gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-violet-500/30 transition-all active:scale-95 hover:bg-violet-500 hover:shadow-violet-500/50"
-              >
-                {aiBusy ? "Architecting..." : "Generate Recipe"}
-              </Button>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-xs text-violet-200/70">
+              AI will fill the recipe form below so you can review and save it.
             </div>
+            <Button 
+              onClick={aiGenerateFromDescription} 
+              disabled={aiBusy || !aiDescription.trim() || surpriseBusy || busy}
+              className="w-full gap-2 rounded-xl bg-violet-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-violet-500/30 transition-all hover:bg-violet-500 hover:shadow-violet-500/50 sm:w-auto"
+            >
+              {aiBusy ? "Architecting..." : "Generate Recipe"}
+            </Button>
           </div>
           {err && <div className="mt-2 rounded-xl border border-red-900/50 bg-red-950/40 px-4 py-3 text-sm text-red-200">{err}</div>}
         </div>
@@ -255,7 +258,7 @@ export default function CreateRecipe() {
             
             <div className="space-y-3">
               <input
-                className="block w-full text-sm text-slate-300 file:mr-4 file:rounded-xl file:border file:border-indigo-500/30 file:bg-indigo-900/40 file:px-4 file:py-2.5 file:text-sm file:font-bold file:text-indigo-200 file:shadow-inner file:cursor-pointer transition-all hover:file:bg-indigo-800/50"
+                className="block w-full text-sm text-slate-300 file:mb-3 file:mr-0 file:block file:w-full file:rounded-xl file:border file:border-indigo-500/30 file:bg-indigo-900/40 file:px-4 file:py-3 file:text-sm file:font-bold file:text-indigo-200 file:shadow-inner file:cursor-pointer transition-all hover:file:bg-indigo-800/50 sm:file:mb-0 sm:file:mr-4 sm:file:inline-flex sm:file:w-auto"
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={(e) => {
@@ -263,12 +266,12 @@ export default function CreateRecipe() {
                   if (f) uploadPhoto(f, { forAi: true });
                 }}
               />
-              {aiPhotoKey && <div className="text-xs text-indigo-400 font-medium">Image locked. Ready to analyze.</div>}
+              {aiPhotoKey && <div className="text-xs font-medium text-indigo-400">Image locked. Ready to analyze.</div>}
 
               <Button 
                 onClick={aiGenerateFromPhoto} 
                 disabled={aiBusy || !aiPhotoKey || surpriseBusy || busy || isUploading} 
-                className="w-full bg-indigo-600 hover:bg-indigo-500 active:scale-95 shadow-lg shadow-indigo-500/20 text-white border-0"
+                className="w-full bg-indigo-600 py-3 text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-500"
               >
                 {isUploading ? "Uploading photo..." : (aiBusy ? "Analyzing photo..." : "Analyze Image")}
               </Button>
@@ -436,8 +439,8 @@ export default function CreateRecipe() {
 
         {err && <div className="mt-4 rounded-md border border-red-900/50 bg-red-950/40 px-3 py-2 text-sm text-red-200">{err}</div>}
 
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Button onClick={create} disabled={busy || !title.trim() || !category}>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+          <Button onClick={create} disabled={busy || !title.trim() || !category} className="w-full sm:w-auto">
             {busy ? "Saving..." : "Save recipe"}
           </Button>
         </div>

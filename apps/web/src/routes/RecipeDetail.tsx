@@ -9,7 +9,7 @@ import { NinjaStar } from "../components/NinjaStar";
 import { Avatar } from "../components/Avatar";
 import { ShareWithFriendsModal } from "../components/ShareWithFriendsModal";
 import { Skeleton } from "../components/Skeleton";
-import { ChefHat, Clock, Eye, EyeOff, Users, Share2, ArrowLeft, Loader2 } from "lucide-react";
+import { ChefHat, Clock, Eye, EyeOff, Users, Share2, ArrowLeft, Loader2, Pencil, Save } from "lucide-react";
 import * as htmlToImage from "html-to-image";
 
 type Recipe = {
@@ -45,7 +45,18 @@ export default function RecipeDetail() {
   const { user, csrfToken } = useAuth();
   const [shareOpen, setShareOpen] = React.useState(false);
   const [exporting, setExporting] = React.useState(false);
+  const [editing, setEditing] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+  const [editErr, setEditErr] = React.useState<string | null>(null);
   const exportRef = React.useRef<HTMLDivElement>(null);
+  const [editForm, setEditForm] = React.useState({
+    title: "",
+    description: "",
+    category: "",
+    visibility: "restricted" as Recipe["visibility"],
+    ingredientsText: "",
+    stepsText: ""
+  });
 
   const q = useQuery({
     queryKey: ["recipe", id, !!user],
@@ -68,6 +79,19 @@ export default function RecipeDetail() {
   }
 
   const r = q.data?.recipe;
+  const isOwner = !!user && !!r && r.author.id === user.id;
+
+  React.useEffect(() => {
+    if (!r) return;
+    setEditForm({
+      title: r.title,
+      description: r.description ?? "",
+      category: r.category,
+      visibility: r.visibility,
+      ingredientsText: r.ingredients.join("\n"),
+      stepsText: r.steps.join("\n")
+    });
+  }, [r]);
 
   // Loading state
   if (q.isLoading) {
@@ -104,12 +128,12 @@ export default function RecipeDetail() {
         </div>
         <h2 className="mt-4 text-xl font-semibold text-slate-200">Something went wrong</h2>
         <p className="mt-2 text-sm text-slate-400">{(q.error as Error).message}</p>
-        <Link to="/" className="mt-4 inline-block">
-          <Button variant="secondary" className="gap-2">
+        <div className="mt-4 inline-block">
+          <Button variant="secondary" className="gap-2" onClick={goBack}>
             <ArrowLeft className="h-4 w-4" />
             Go back
           </Button>
-        </Link>
+        </div>
       </Card>
     );
   }
@@ -123,23 +147,57 @@ export default function RecipeDetail() {
         </div>
         <h2 className="mt-4 text-xl font-semibold text-slate-200">Recipe not found</h2>
         <p className="mt-2 text-sm text-slate-400">This recipe may have been deleted or made private</p>
-        <Link to="/" className="mt-4 inline-block">
-          <Button variant="secondary" className="gap-2">
+        <div className="mt-4 inline-block">
+          <Button variant="secondary" className="gap-2" onClick={goBack}>
             <ArrowLeft className="h-4 w-4" />
             Go back
           </Button>
-        </Link>
+        </div>
       </Card>
     );
   }
 
   const VisIcon = visibilityIcons[r.visibility];
-  const canShare = !!user && !!r && r.author.id === user.id;
+  const canShare = isOwner;
   const formattedDate = new Date(r.createdAt).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric"
   });
+
+  function goBack() {
+    if (window.history.length > 1) {
+      nav(-1);
+      return;
+    }
+    nav("/feed");
+  }
+
+  async function saveEdits() {
+    if (!id || !isOwner) return;
+    setSaving(true);
+    setEditErr(null);
+    try {
+      await api(`/recipes/${id}`, {
+        method: "PATCH",
+        csrf: csrfToken || "",
+        body: JSON.stringify({
+          title: editForm.title.trim(),
+          description: editForm.description.trim() || null,
+          category: editForm.category,
+          visibility: editForm.visibility,
+          ingredients: editForm.ingredientsText.split(/\n/).map((x) => x.trim()).filter(Boolean),
+          steps: editForm.stepsText.split(/\n/).map((x) => x.trim()).filter(Boolean)
+        })
+      });
+      await q.refetch();
+      setEditing(false);
+    } catch (e: any) {
+      setEditErr(e.message || "Failed to update recipe");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function exportAsImage() {
     if (!exportRef.current || exporting || !r) return;
@@ -177,16 +235,18 @@ export default function RecipeDetail() {
 
   return (
     <div className="grid gap-6">
-      {/* Back link */}
-      <Link to="/" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200">
-        <ArrowLeft className="h-4 w-4" />
-        Back to feed
-      </Link>
-
       {/* Main content area */}
       <div className="-mx-4 -mt-6 sm:mx-0 sm:mt-0 sm:overflow-hidden sm:rounded-[2.5rem] sm:border sm:border-white/10 sm:bg-slate-900/40 sm:backdrop-blur-xl sm:shadow-2xl sm:shadow-black/50">
         {/* Image / Generation State */}
         <div className="relative aspect-square sm:aspect-auto sm:min-h-[400px] sm:h-[500px] bg-slate-950 overflow-hidden">
+          <button
+            onClick={goBack}
+            className="absolute left-4 top-4 z-20 inline-flex items-center justify-center rounded-full border border-white/10 bg-slate-950/55 p-3 text-slate-100 backdrop-blur-xl transition hover:bg-slate-900/75"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+
           {r.imageKey ? (
             <>
               <img
@@ -265,18 +325,29 @@ export default function RecipeDetail() {
             <div className="fixed bottom-24 right-4 z-40 flex flex-col gap-3 sm:static sm:flex-row sm:items-center">
               <button
                 onClick={user ? toggleStar : () => nav("/register")}
-                className={`group flex items-center gap-2 rounded-2xl px-5 py-3 transition-all active:scale-95 shadow-lg ${
+                className={`group flex items-center gap-2 rounded-2xl border px-5 py-3 backdrop-blur-xl transition-all active:scale-95 shadow-lg ${
                   r.viewerStarred
-                    ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-violet-500/25"
-                    : "bg-slate-800/90 backdrop-blur-md text-slate-300 hover:bg-slate-700 hover:text-white"
+                    ? "border-violet-400/30 bg-gradient-to-r from-violet-600/90 to-fuchsia-600/90 text-white shadow-violet-500/25"
+                    : "border-white/10 bg-slate-900/55 text-slate-300 hover:bg-slate-800/70 hover:text-white"
                 }`}
               >
                 <NinjaStar className={`h-6 w-6 ${r.viewerStarred ? "text-white" : "text-violet-400 group-hover:text-violet-300 transition-colors"}`} />
                 <span className="font-bold">{r.starsCount}</span>
               </button>
+
+              {isOwner && (
+                <Button
+                  variant="secondary"
+                  onClick={() => setEditing((v) => !v)}
+                  className="gap-2 rounded-2xl border border-white/10 bg-slate-900/55 px-5 py-3 shadow-lg backdrop-blur-xl"
+                >
+                  <Pencil className="h-5 w-5" />
+                  <span className="hidden sm:inline">{editing ? "Close" : "Edit"}</span>
+                </Button>
+              )}
               
               {canShare && (
-                <Button variant="secondary" onClick={() => setShareOpen(true)} className="gap-2 rounded-2xl px-5 py-3 shadow-lg bg-slate-800/90 backdrop-blur-md">
+                <Button variant="secondary" onClick={() => setShareOpen(true)} className="gap-2 rounded-2xl border border-white/10 bg-slate-900/55 px-5 py-3 shadow-lg backdrop-blur-xl">
                   <Share2 className="h-5 w-5" />
                   <span className="hidden sm:inline">Share</span>
                 </Button>
@@ -295,6 +366,79 @@ export default function RecipeDetail() {
           </div>
         </div>
       </div>
+
+      {isOwner && editing && (
+        <Card className="rounded-[2rem] p-5 sm:p-6">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-slate-100">Edit recipe</h2>
+            <Button onClick={saveEdits} disabled={saving || !editForm.title.trim() || !editForm.category} className="gap-2">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Save changes
+            </Button>
+          </div>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="text-xs text-slate-400">Title</label>
+              <input
+                value={editForm.title}
+                onChange={(e) => setEditForm((v) => ({ ...v, title: e.target.value }))}
+                className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900/60 px-4 py-3 text-sm text-slate-100"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400">Category</label>
+              <input
+                value={editForm.category}
+                onChange={(e) => setEditForm((v) => ({ ...v, category: e.target.value }))}
+                className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900/60 px-4 py-3 text-sm text-slate-100"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-xs text-slate-400">Description</label>
+              <textarea
+                rows={3}
+                value={editForm.description}
+                onChange={(e) => setEditForm((v) => ({ ...v, description: e.target.value }))}
+                className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900/60 px-4 py-3 text-sm text-slate-100"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400">Visibility</label>
+              <select
+                value={editForm.visibility}
+                onChange={(e) => setEditForm((v) => ({ ...v, visibility: e.target.value as Recipe["visibility"] }))}
+                className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900/60 px-4 py-3 text-sm text-slate-100"
+              >
+                <option value="private">Private</option>
+                <option value="restricted">Ninjagos only</option>
+                <option value="public">Public</option>
+              </select>
+            </div>
+            <div />
+            <div>
+              <label className="text-xs text-slate-400">Ingredients</label>
+              <textarea
+                rows={7}
+                value={editForm.ingredientsText}
+                onChange={(e) => setEditForm((v) => ({ ...v, ingredientsText: e.target.value }))}
+                className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900/60 px-4 py-3 text-sm text-slate-100"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400">Instructions</label>
+              <textarea
+                rows={7}
+                value={editForm.stepsText}
+                onChange={(e) => setEditForm((v) => ({ ...v, stepsText: e.target.value }))}
+                className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900/60 px-4 py-3 text-sm text-slate-100"
+              />
+            </div>
+          </div>
+
+          {editErr && <div className="mt-4 rounded-xl border border-red-900/50 bg-red-950/40 px-4 py-3 text-sm text-red-200">{editErr}</div>}
+        </Card>
+      )}
 
       {/* Ingredients and Steps */}
       <div className="grid gap-6 lg:grid-cols-5">

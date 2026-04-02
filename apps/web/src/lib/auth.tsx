@@ -7,6 +7,7 @@ export type User = {
   displayName: string;
   handle: string;
   avatarKey: string | null;
+  bannerKey: string | null;
 };
 
 type AuthState = {

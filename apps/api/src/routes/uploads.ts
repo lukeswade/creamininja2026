@@ -13,6 +13,7 @@ type AuthedUser = {
   handle: string;
   displayName: string;
   avatarKey: string | null;
+  bannerKey: string | null;
 };
 
 type HonoVars = {
@@ -25,7 +26,7 @@ router.use("/presign", authOptional, requireAuth, requireCsrf);
 router.use("/set-avatar", authOptional, requireAuth, requireCsrf);
 
 const PresignSchema = z.object({
-  kind: z.enum(["avatar", "recipe"]),
+  kind: z.enum(["avatar", "banner", "recipe"]),
   contentType: z.string().min(3).max(80),
   bytes: z.number().int().min(1).max(2_500_000)
 });
@@ -100,9 +101,9 @@ router.get("/file/:key{.+}", authOptional, async (c) => {
   const key = c.req.param("key");
 
   // Enforce access:
-  // - avatar/*: public, since avatars are rendered anywhere a public profile/post appears
+  // - avatar/* and banner/*: public, since profiles are publicly visible
   // - any key referenced by a recipe: public if the recipe is public, otherwise only to an allowed viewer
-  if (key.startsWith("avatar/")) {
+  if (key.startsWith("avatar/") || key.startsWith("banner/")) {
     return await streamR2(c, key);
   }
 

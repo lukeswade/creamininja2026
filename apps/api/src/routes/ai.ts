@@ -41,7 +41,7 @@ function buildRecipeSystem(validCategories: string[], deluxeInstruction: string)
     deluxeInstruction,
     `Category must be exactly one of: ${validCategories.join(", ")}.`,
     'Return only JSON with keys: "title", "category", "description", "ingredients", "steps", "notes", "allergens".',
-    "Description: macro-style summary only, max 120 chars.",
+    "Description: start with a plain-language flavor description, then end with compact macros, max 120 chars total.",
     "Ingredients: 3-6 precise items.",
     "Steps: 3-5 short steps.",
     'Include freeze/spin guidance such as "Freeze 24h" and the correct spin mode.'
