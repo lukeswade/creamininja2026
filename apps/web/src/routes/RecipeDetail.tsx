@@ -225,7 +225,7 @@ export default function RecipeDetail() {
               
               {/* Meta info */}
               <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-                <Link to={`/@${r.author.handle}`} className="flex items-center gap-2 hover:underline">
+                <Link to={`/u/${r.author.handle}`} className="flex items-center gap-2 hover:underline">
                   <Avatar
                     handle={r.author.handle}
                     avatarKey={r.author.avatarKey}

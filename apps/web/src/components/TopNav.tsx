@@ -71,7 +71,7 @@ export function TopNav() {
           {user ? (
             <>
               <NavLink
-                to={`/@${user.handle}`}
+                to={`/u/${user.handle}`}
                 className="flex items-center gap-2 rounded-lg border border-white/5 bg-slate-800/50 px-3 py-1.5 text-sm font-medium text-slate-200 transition hover:bg-slate-700/50"
               >
                 <Avatar handle={user.handle} avatarKey={user.avatarKey} size="xs" />

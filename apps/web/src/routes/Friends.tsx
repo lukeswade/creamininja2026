@@ -202,11 +202,11 @@ export default function Friends() {
             <div className="grid gap-3">
               {filteredFriends.map((f) => (
                 <Card key={f.id} className="flex items-center gap-4">
-                  <Link to={`/@${f.handle}`}>
+                  <Link to={`/u/${f.handle}`}>
                     <Avatar handle={f.handle} avatarKey={f.avatarKey} size="md" />
                   </Link>
                   <div className="flex-1 min-w-0">
-                    <Link to={`/@${f.handle}`} className="hover:underline">
+                    <Link to={`/u/${f.handle}`} className="hover:underline">
                       <p className="font-medium text-slate-200 truncate">
                         {f.displayName}
                       </p>
@@ -258,11 +258,11 @@ export default function Friends() {
                   <div className="grid gap-3">
                     {pending.map((f) => (
                       <Card key={f.id} className="flex items-center gap-4">
-                        <Link to={`/@${f.handle}`}>
+                        <Link to={`/u/${f.handle}`}>
                           <Avatar handle={f.handle} avatarKey={f.avatarKey} size="md" />
                         </Link>
                         <div className="flex-1 min-w-0">
-                          <Link to={`/@${f.handle}`} className="hover:underline">
+                          <Link to={`/u/${f.handle}`} className="hover:underline">
                             <p className="font-medium text-slate-200 truncate">
                               {f.displayName}
                             </p>
@@ -298,11 +298,11 @@ export default function Friends() {
                   <div className="grid gap-3">
                     {outgoing.map((f) => (
                       <Card key={f.id} className="flex items-center gap-4">
-                        <Link to={`/@${f.handle}`}>
+                        <Link to={`/u/${f.handle}`}>
                           <Avatar handle={f.handle} avatarKey={f.avatarKey} size="md" />
                         </Link>
                         <div className="flex-1 min-w-0">
-                          <Link to={`/@${f.handle}`} className="hover:underline">
+                          <Link to={`/u/${f.handle}`} className="hover:underline">
                             <p className="font-medium text-slate-200 truncate">
                               {f.displayName}
                             </p>
@@ -373,11 +373,11 @@ export default function Friends() {
             <div className="grid gap-3">
               {(searchQ.data?.users || []).map((u) => (
                 <Card key={u.id} className="flex items-center gap-4">
-                  <Link to={`/@${u.handle}`}>
+                  <Link to={`/u/${u.handle}`}>
                     <Avatar handle={u.handle} avatarKey={u.avatarKey} size="md" />
                   </Link>
                   <div className="flex-1 min-w-0">
-                    <Link to={`/@${u.handle}`} className="hover:underline">
+                    <Link to={`/u/${u.handle}`} className="hover:underline">
                       <p className="font-medium text-slate-200 truncate">
                         {u.displayName}
                       </p>

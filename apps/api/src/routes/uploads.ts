@@ -101,19 +101,17 @@ router.get("/file/:key{.+}", authOptional, async (c) => {
 
   // Enforce access:
   // - avatar/*: public, since avatars are rendered anywhere a public profile/post appears
-  // - recipe/*: public if the recipe is public, otherwise only to an allowed viewer
+  // - any key referenced by a recipe: public if the recipe is public, otherwise only to an allowed viewer
   if (key.startsWith("avatar/")) {
     return await streamR2(c, key);
   }
 
-  if (key.startsWith("recipe/") || key.startsWith("auto-")) {
-    // find recipe referencing this key
-    const r = await first<{ id: string; author_id: string; visibility: string }>(
-      c.env,
-      "SELECT id, author_id, visibility FROM recipes WHERE image_key = ?",
-      [key]
-    );
-    if (!r) return c.json(notFound(), 404);
+  const r = await first<{ id: string; author_id: string; visibility: string }>(
+    c.env,
+    "SELECT id, author_id, visibility FROM recipes WHERE image_key = ?",
+    [key]
+  );
+  if (r) {
     const can = await canViewRecipe(c.env, me?.id ?? null, r.id, r.author_id, r.visibility);
     if (!can) return c.json(forbidden(), 403);
     return await streamR2(c, key);

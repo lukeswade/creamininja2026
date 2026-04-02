@@ -13,7 +13,7 @@ export function BottomNav() {
     { to: "/gallery", icon: Image, label: "Gallery", requireAuth: false },
     { to: "/create", icon: PlusCircle, label: "Create", requireAuth: true },
     { to: "/friends", icon: Users, label: "Dojo", requireAuth: true },
-    { to: user ? `/@${user.handle}` : "/login", icon: UserCircle, label: user ? "Profile" : "Log In", requireAuth: false },
+    { to: user ? `/u/${user.handle}` : "/login", icon: UserCircle, label: user ? "Profile" : "Log In", requireAuth: false },
   ].filter(l => !l.requireAuth || user);
 
   return (
