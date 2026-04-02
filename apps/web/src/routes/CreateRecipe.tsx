@@ -61,16 +61,18 @@ export default function CreateRecipe() {
     setErr(null);
     setIsUploading(true);
     try {
+      const optimizedFile = await optimizeImageForUpload(file);
+
       const presign = await api<{ ok: true; key: string; url: string; headers: Record<string, string> }>("/uploads/presign", {
         method: "POST",
-        body: JSON.stringify({ kind: "recipe", contentType: file.type, bytes: file.size }),
+        body: JSON.stringify({ kind: "recipe", contentType: optimizedFile.type, bytes: optimizedFile.size }),
         csrf: csrfToken || ""
       });
 
       const putRes = await fetch(presign.url, {
         method: "PUT",
         headers: presign.headers,
-        body: file
+        body: optimizedFile
       });
 
       if (!putRes.ok) {
@@ -248,7 +250,7 @@ export default function CreateRecipe() {
               <div className="flex items-center gap-2 text-lg font-bold text-indigo-100">
                 <span>📸</span> Generate from photo
               </div>
-              <p className="mt-1 text-sm text-indigo-300/80 mb-4">Snap a photo of your ingredients and AI will invent the recipe.</p>
+              <p className="mt-1 text-sm text-indigo-300/80 mb-4">Snap a photo of your ingredients and AI will invent the recipe. Large photos are compressed automatically for faster analysis.</p>
             </div>
             
             <div className="space-y-3">
@@ -442,4 +444,49 @@ export default function CreateRecipe() {
       </Card>
     </div>
   );
+}
+
+async function optimizeImageForUpload(file: File) {
+  if (!file.type.startsWith("image/")) return file;
+  if (file.size <= 900_000) return file;
+
+  const image = await loadImageFromFile(file);
+  const maxDimension = 1400;
+  const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return file;
+
+  ctx.drawImage(image, 0, 0, width, height);
+
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, "image/jpeg", 0.82);
+  });
+
+  if (!blob || blob.size >= file.size) return file;
+  return new File([blob], file.name.replace(/\.\w+$/, ".jpg"), {
+    type: "image/jpeg",
+    lastModified: file.lastModified
+  });
+}
+
+function loadImageFromFile(file: File) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Failed to load selected image"));
+    };
+    img.src = objectUrl;
+  });
 }

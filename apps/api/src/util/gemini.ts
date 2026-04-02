@@ -31,7 +31,7 @@ export async function geminiGenerateJSON<T>(args: GeminiGenerateArgs): Promise<T
   if (!args.apiKey || args.apiKey === "undefined") {
     throw new Error("GEMINI_API_KEY is missing. Check your .dev.vars or Cloudflare secrets.");
   }
-  const model = args.model ?? "gemini-3-flash-preview";
+  const model = args.model ?? "gemini-3-flash";
 
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/` +
@@ -53,7 +53,7 @@ export async function geminiGenerateJSON<T>(args: GeminiGenerateArgs): Promise<T
     generationConfig: {
       temperature: args.temperature ?? 0.7,
       topP: args.topP ?? 0.9,
-      maxOutputTokens: args.maxOutputTokens ?? 1500,
+      maxOutputTokens: args.maxOutputTokens ?? 700,
       responseMimeType: "application/json"
     },
   };

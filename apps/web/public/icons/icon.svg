@@ -1,43 +1,43 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0b0f17"/>
-      <stop offset="100%" style="stop-color:#1a1f2e"/>
+      <stop offset="0%" stop-color="#0b1020" />
+      <stop offset="100%" stop-color="#1b1230" />
     </linearGradient>
-    <linearGradient id="ninja" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#8b5cf6"/>
-      <stop offset="100%" style="stop-color:#d946ef"/>
+    <linearGradient id="glow" x1="15%" y1="10%" x2="85%" y2="90%">
+      <stop offset="0%" stop-color="#8b5cf6" />
+      <stop offset="100%" stop-color="#ec4899" />
     </linearGradient>
-    <linearGradient id="star" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#c084fc"/>
-      <stop offset="100%" style="stop-color:#e879f9"/>
+    <linearGradient id="cream" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#e9d5ff" />
     </linearGradient>
   </defs>
-  
-  <!-- Background -->
-  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
-  
-  <!-- Ninja head/hood shape -->
-  <ellipse cx="256" cy="220" rx="140" ry="130" fill="url(#ninja)" opacity="0.9"/>
-  
-  <!-- Eye band -->
-  <rect x="116" y="180" width="280" height="60" rx="30" fill="#0b0f17"/>
-  
-  <!-- Eyes -->
-  <ellipse cx="200" cy="210" rx="28" ry="20" fill="#f1f5f9"/>
-  <ellipse cx="312" cy="210" rx="28" ry="20" fill="#f1f5f9"/>
-  <circle cx="208" cy="210" r="10" fill="#0b0f17"/>
-  <circle cx="320" cy="210" r="10" fill="#0b0f17"/>
-  <circle cx="211" cy="207" r="4" fill="#f1f5f9"/>
-  <circle cx="323" cy="207" r="4" fill="#f1f5f9"/>
-  
-  <!-- Ninja hood bottom flap -->
-  <path d="M 180 290 Q 256 340 332 290 L 320 350 Q 256 400 192 350 Z" fill="url(#ninja)" opacity="0.8"/>
-  
-  <!-- Throwing star in bottom right -->
-  <g transform="translate(380, 380) scale(0.55)">
-    <path d="M 60 10 L 75 45 L 115 30 L 85 60 L 115 95 L 75 75 L 60 115 L 45 75 L 10 95 L 35 60 L 10 30 L 45 45 Z" fill="url(#star)"/>
-    <circle cx="60" cy="60" r="18" fill="url(#ninja)"/>
-    <circle cx="60" cy="60" r="8" fill="#0b0f17"/>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg)" />
+  <circle cx="256" cy="230" r="170" fill="url(#glow)" opacity="0.18" />
+
+  <path
+    d="M168 210c0-56 39-96 96-96 34 0 61 11 84 33l-33 37c-15-15-31-22-50-22-26 0-43 15-43 37 0 21 14 33 41 33h28v48h-28c-29 0-45 13-45 35 0 24 19 39 49 39 26 0 47-9 66-28l33 35c-25 27-58 41-103 41-63 0-104-38-104-93 0-31 14-55 39-69-20-13-30-33-30-60Z"
+    fill="url(#cream)"
+  />
+
+  <path
+    d="M177 292h158l-20 107c-4 20-21 35-42 35h-34c-21 0-38-15-42-35Z"
+    fill="url(#glow)"
+  />
+
+  <path
+    d="M216 319h80l-10 61c-2 11-12 20-24 20h-12c-12 0-22-9-24-20Z"
+    fill="#fff"
+    opacity="0.2"
+  />
+
+  <g transform="translate(352 118) scale(0.92)">
+    <path
+      d="M62 0 77 34l37-15-20 34 32 25-40 3-9 39-25-31-37 14 21-33-33-25 40-4Z"
+      fill="url(#glow)"
+    />
+    <circle cx="62" cy="58" r="10" fill="#0b1020" />
   </g>
 </svg>

@@ -34,6 +34,20 @@ const RecipeSchema = z.object({
   allergens: z.array(z.string().min(1).max(40)).max(3).optional()
 });
 
+function buildRecipeSystem(validCategories: string[], deluxeInstruction: string) {
+  return [
+    "You are a Ninja CREAMi recipe generator.",
+    "Write concise, practical, realistic recipes.",
+    deluxeInstruction,
+    `Category must be exactly one of: ${validCategories.join(", ")}.`,
+    'Return only JSON with keys: "title", "category", "description", "ingredients", "steps", "notes", "allergens".',
+    "Description: macro-style summary only, max 120 chars.",
+    "Ingredients: 3-6 precise items.",
+    "Steps: 3-5 short steps.",
+    'Include freeze/spin guidance such as "Freeze 24h" and the correct spin mode.'
+  ].join(" ");
+}
+
 const GenFromIngredients = z.object({
   ingredients: z.array(z.string().min(1).max(80)).min(1).max(80),
   category: z.string().min(2).max(40),
@@ -51,20 +65,7 @@ router.post("/from-ingredients", zValidator("json", GenFromIngredients), async (
 
   const validCategories = [...CORE_CATEGORIES, ...LIFESTYLE_CATEGORIES, ...(body.isDeluxe ? DELUXE_ONLY_CATEGORIES : [])];
 
-  const system = `You are a Minimalist Chef and Ninja CREAMi expert. 
-Tone: Professional, direct, no fluff.
-${deluxeInstruction}
-Return ONLY valid JSON:
-{
-  "title": string (engaging, 3-60 chars),
-  "category": string (EXACTLY one of: ${validCategories.join(", ")}),
-  "description": string (Nutritional summary only. MAX 120 chars. No flowery AI adjectives),
-  "ingredients": string[] (3-6 items, precise),
-  "steps": string[] (3-5 concise items),
-  "notes": string[] (optional, max 2 items),
-  "allergens": string[] (optional, max 3 items)
-}
-Hardware: 1) "Freeze 24h." 2) Specific Spin (e.g. LITE ICE CREAM). 3) Re-spin if needed.`;
+  const system = buildRecipeSystem(validCategories, deluxeInstruction);
 
   const userPrompt = `Create a ${body.category} CREAMi recipe using these ingredients: ${body.ingredients.join(", ")}.
 Dietary restrictions: ${(body.dietary ?? []).join(", ") || "none"}.
@@ -73,10 +74,11 @@ Creativity level: ${body.creativity}.`;
   try {
     const recipe = await geminiGenerateJSON<any>({
       apiKey: c.env.GEMINI_API_KEY,
+      model: "gemini-3-flash",
       system,
       user: userPrompt,
-      maxOutputTokens: 1500,
-      temperature: 0.6
+      maxOutputTokens: 650,
+      temperature: body.creativity === "wild" ? 0.8 : body.creativity === "safe" ? 0.35 : 0.55
     });
 
     const parsed = RecipeSchema.safeParse(recipe);
@@ -114,31 +116,19 @@ router.post("/from-image", zValidator("json", GenFromImage), async (c) => {
 
   const validCategories = [...CORE_CATEGORIES, ...LIFESTYLE_CATEGORIES, ...(isDeluxe ? DELUXE_ONLY_CATEGORIES : [])];
 
-  const system = `You are a Minimalist Chef. Identify ingredients in the photo and invent a recipe.
-Tone: Direct, professional, 0% fluff.
-${deluxeInstruction}
-Return ONLY valid JSON:
-{
-  "title": string (engaging, 3-60 chars),
-  "category": string (EXACTLY one of: ${validCategories.join(", ")}),
-  "description": string (Macros only. MAX 120 chars. No "escape to paradise" tropes),
-  "ingredients": string[] (3-6 items),
-  "steps": string[] (3-5 items),
-  "notes": string[] (optional),
-  "allergens": string[] (optional)
-}
-Hardware: 1) "Freeze 24h." 2) Specific Spin program.`;
+  const system = `${buildRecipeSystem(validCategories, deluxeInstruction)} First identify the likely ingredients visible in the image, then build the recipe from those ingredients.`;
 
   const userPrompt = `Generate a ${category} CREAMi recipe based on this photo of ingredients.`;
 
   try {
     const recipe = await geminiGenerateJSON<any>({
       apiKey: c.env.GEMINI_API_KEY,
+      model: "gemini-3-flash",
       system,
       user: userPrompt,
       image: { mimeType: contentType, base64: b64 },
-      maxOutputTokens: 1500,
-      temperature: 0.6
+      maxOutputTokens: 800,
+      temperature: 0.45
     });
 
     const parsed = RecipeSchema.safeParse(recipe);
@@ -171,30 +161,18 @@ router.post("/from-description", zValidator("json", GenFromDescription), async (
 
   const validCategories = [...CORE_CATEGORIES, ...LIFESTYLE_CATEGORIES, ...(isDeluxe ? DELUXE_ONLY_CATEGORIES : [])];
 
-  const system = `You are a Minimalist Chef. Architect a recipe from the craving.
-Tone: Concise, technical, professional. 
-${deluxeInstruction}
-Return ONLY valid JSON:
-{
-  "title": string (3-60 chars),
-  "category": string (EXACTLY one of: ${validCategories.join(", ")}),
-  "description": string (Macros summary. MAX 120 chars. No marketing fluff),
-  "ingredients": string[] (3-6 items),
-  "steps": string[] (3-5 concise items),
-  "notes": string[] (optional),
-  "allergens": string[] (optional)
-}
-Hardware: 1) "Freeze 24h." 2) Specific Spin program.`;
+  const system = `${buildRecipeSystem(validCategories, deluxeInstruction)} Infer the best category from the user's craving if it is not explicit.`;
 
   const userPrompt = `Create an incredible CREAMi recipe based on this exact description or craving: "${description}".`;
 
   try {
     const recipe = await geminiGenerateJSON<any>({
       apiKey: c.env.GEMINI_API_KEY,
+      model: "gemini-3-flash",
       system,
       user: userPrompt,
-      maxOutputTokens: 1500,
-      temperature: 0.75
+      maxOutputTokens: 650,
+      temperature: 0.55
     });
 
     const parsed = RecipeSchema.safeParse(recipe);
@@ -244,29 +222,18 @@ router.post("/surprise", zValidator("json", SurpriseSchema), async (c) => {
     ? "The user is using a Ninja CREAMi Deluxe (24oz pint). Scale ingredients for a 24oz yield. You can use Deluxe-exclusive processing modes like FRAPPE, FROZEN DRINK, SLUSHI, ITALIAN ICE, or CREAMICCINO."
     : "The user is using a standard Ninja CREAMi (16oz pint). Keep ingredients scaled for a 16oz max capacity.";
 
-  const system = `You are a Minimalist Chef creating secret menu CREAMi hacks.
-${deluxeInstruction}
-Return ONLY valid JSON:
-{
-  "title": string (3-60 chars),
-  "category": string (EXACTLY one of: ${validPool.join(", ")}),
-  "description": string (Macros only. MAX 120 chars. 0% generic AI fluff),
-  "ingredients": string[] (3-6 items),
-  "steps": string[] (3-5 concise items),
-  "notes": string[] (optional),
-  "allergens": string[] (optional)
-}
-Hardware: 1) "Freeze 24h." 2) Exact Spin mode.`;
+  const system = `${buildRecipeSystem(validPool, deluxeInstruction)} Make it feel inventive but still realistic and easy to follow.`;
 
   const userPrompt = `Create a ${category} recipe with theme: "${theme}".`;
 
   try {
     const recipe = await geminiGenerateJSON<any>({
       apiKey: c.env.GEMINI_API_KEY,
+      model: "gemini-3-flash",
       system,
       user: userPrompt,
-      maxOutputTokens: 1500,
-      temperature: 0.85
+      maxOutputTokens: 650,
+      temperature: 0.75
     });
 
     const parsed = RecipeSchema.safeParse(recipe);
