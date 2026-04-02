@@ -74,7 +74,7 @@ Creativity level: ${body.creativity}.`;
   try {
     const recipe = await geminiGenerateJSON<any>({
       apiKey: c.env.GEMINI_API_KEY,
-      model: "gemini-3-flash",
+      model: "gemini-2.0-flash-001",
       system,
       user: userPrompt,
       maxOutputTokens: 650,
@@ -123,7 +123,7 @@ router.post("/from-image", zValidator("json", GenFromImage), async (c) => {
   try {
     const recipe = await geminiGenerateJSON<any>({
       apiKey: c.env.GEMINI_API_KEY,
-      model: "gemini-3-flash",
+      model: "gemini-2.0-flash-001",
       system,
       user: userPrompt,
       image: { mimeType: contentType, base64: b64 },
@@ -168,7 +168,7 @@ router.post("/from-description", zValidator("json", GenFromDescription), async (
   try {
     const recipe = await geminiGenerateJSON<any>({
       apiKey: c.env.GEMINI_API_KEY,
-      model: "gemini-3-flash",
+      model: "gemini-2.0-flash-001",
       system,
       user: userPrompt,
       maxOutputTokens: 650,
@@ -229,7 +229,7 @@ router.post("/surprise", zValidator("json", SurpriseSchema), async (c) => {
   try {
     const recipe = await geminiGenerateJSON<any>({
       apiKey: c.env.GEMINI_API_KEY,
-      model: "gemini-3-flash",
+      model: "gemini-2.0-flash-001",
       system,
       user: userPrompt,
       maxOutputTokens: 650,

@@ -1,7 +1,7 @@
 // apps/api/src/util/gemini.ts
 export type GeminiGenerateArgs = {
   apiKey: string;
-  model?: string; // e.g. "gemini-3-flash-preview"
+  model?: string; // e.g. "gemini-2.0-flash-001"
   system?: string;
   user: string;
   // Optional image bytes as base64 (no data: prefix)
@@ -31,7 +31,7 @@ export async function geminiGenerateJSON<T>(args: GeminiGenerateArgs): Promise<T
   if (!args.apiKey || args.apiKey === "undefined") {
     throw new Error("GEMINI_API_KEY is missing. Check your .dev.vars or Cloudflare secrets.");
   }
-  const model = args.model ?? "gemini-3-flash";
+  const model = args.model ?? "gemini-2.0-flash-001";
 
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/` +
