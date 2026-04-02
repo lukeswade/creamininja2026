@@ -164,6 +164,7 @@ export default function RecipeDetail() {
     day: "numeric",
     year: "numeric"
   });
+  const descriptionParts = splitDescriptionAndMacros(r.description);
 
   function goBack() {
     if (window.history.length > 1) {
@@ -206,14 +207,16 @@ export default function RecipeDetail() {
     try {
       mountedNode = exportRef.current.cloneNode(true) as HTMLDivElement;
       mountedNode.style.position = "fixed";
-      mountedNode.style.left = "-10000px";
-      mountedNode.style.top = "0";
+      mountedNode.style.left = "16px";
+      mountedNode.style.top = "16px";
       mountedNode.style.zIndex = "9999";
-      mountedNode.style.opacity = "1";
+      mountedNode.style.opacity = "0.01";
       mountedNode.style.pointerEvents = "none";
+      mountedNode.style.transform = "translateY(-24px)";
       document.body.appendChild(mountedNode);
 
       await inlineExportImages(mountedNode);
+      await waitForPaint();
 
       const dataUrl = await htmlToImage.toPng(mountedNode, {
         cacheBust: true,
@@ -317,7 +320,14 @@ export default function RecipeDetail() {
 
               {/* Description */}
               {r.description && (
-                <p className="mt-4 text-slate-300 leading-relaxed">{r.description}</p>
+                <div className="mt-4 space-y-2 text-slate-300">
+                  {descriptionParts.flavor && (
+                    <p className="leading-relaxed">{descriptionParts.flavor}</p>
+                  )}
+                  {descriptionParts.macros && (
+                    <p className="leading-relaxed text-slate-400">{descriptionParts.macros}</p>
+                  )}
+                </div>
               )}
             </div>
 
@@ -514,7 +524,8 @@ export default function RecipeDetail() {
       {/* Hidden Export Node (rendered under the layout to prevent blank paints on Safari/Chrome) */}
       <div 
         ref={exportRef}
-        className="fixed top-0 left-[-10000px] z-[-1] w-[600px] pointer-events-none p-8"
+        className="fixed left-4 top-4 z-[9999] w-[600px] pointer-events-none p-8 opacity-[0.01]"
+        style={{ transform: "translateY(-24px)" }}
       >
         <div className="bg-slate-900/90 rounded-3xl overflow-hidden border border-white/10 flex flex-col shadow-2xl">
           {r.imageKey ? (
@@ -557,8 +568,9 @@ export default function RecipeDetail() {
               </div>
             </div>
 
-            <div className="text-lg text-slate-300 leading-relaxed font-medium">
-              {r.description || "The ultimate Ninja CREAMi creation."}
+            <div className="space-y-2 text-lg font-medium leading-relaxed text-slate-300">
+              <div>{descriptionParts.flavor || r.description || "The ultimate Ninja CREAMi creation."}</div>
+              {descriptionParts.macros && <div className="text-slate-400">{descriptionParts.macros}</div>}
             </div>
 
             <div className="grid grid-cols-2 gap-6 mt-2">
@@ -598,6 +610,29 @@ export default function RecipeDetail() {
       </div>
     </div>
   );
+}
+
+function splitDescriptionAndMacros(description?: string | null) {
+  const text = (description || "").trim();
+  if (!text) return { flavor: "", macros: "" };
+
+  const macroMatch = text.match(/(?:approx\.?\s*)?\d+\s*(?:k?cal|cals?)\b.*$/i);
+  if (!macroMatch) return { flavor: text, macros: "" };
+
+  const flavor = text.slice(0, macroMatch.index).trim().replace(/[.\s]+$/, "");
+  const macros = macroMatch[0].trim();
+  return {
+    flavor: flavor ? `${flavor}.` : "",
+    macros
+  };
+}
+
+function waitForPaint() {
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => resolve());
+    });
+  });
 }
 
 async function inlineExportImages(node: HTMLElement) {
