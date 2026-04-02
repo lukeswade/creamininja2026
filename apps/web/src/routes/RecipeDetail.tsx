@@ -9,7 +9,7 @@ import { NinjaStar } from "../components/NinjaStar";
 import { Avatar } from "../components/Avatar";
 import { ShareWithFriendsModal } from "../components/ShareWithFriendsModal";
 import { Skeleton } from "../components/Skeleton";
-import { ChefHat, Clock, Eye, EyeOff, Users, Share2, ArrowLeft, Loader2, Pencil, Save } from "lucide-react";
+import { ChefHat, Clock, Eye, EyeOff, Users, Share2, ArrowLeft, Loader2, Pencil, Save, ChevronLeft } from "lucide-react";
 
 type Recipe = {
   id: string;
@@ -47,6 +47,7 @@ export default function RecipeDetail() {
   const [editing, setEditing] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [editErr, setEditErr] = React.useState<string | null>(null);
+  const [mobileActionsOpen, setMobileActionsOpen] = React.useState(false);
   const [editForm, setEditForm] = React.useState({
     title: "",
     description: "",
@@ -90,6 +91,10 @@ export default function RecipeDetail() {
       stepsText: r.steps.join("\n")
     });
   }, [r]);
+
+  React.useEffect(() => {
+    setMobileActionsOpen(false);
+  }, [id]);
 
   // Loading state
   if (q.isLoading) {
@@ -309,8 +314,75 @@ export default function RecipeDetail() {
               )}
             </div>
 
-            {/* Mobile-only Sticky Actions / Desktop Actions */}
-            <div className="fixed bottom-24 right-4 z-40 flex flex-col gap-3 sm:static sm:flex-row sm:items-center">
+            {/* Mobile action drawer */}
+            <div className="fixed bottom-24 right-3 z-40 flex flex-col items-end gap-2 sm:hidden">
+              {mobileActionsOpen && (
+                <div className="flex flex-col items-end gap-2">
+                  <button
+                    onClick={() => {
+                      setMobileActionsOpen(false);
+                      void (user ? toggleStar() : nav("/register"));
+                    }}
+                    className={`group flex min-w-[92px] items-center justify-center gap-2 rounded-2xl border px-4 py-3 backdrop-blur-xl transition-all active:scale-95 ${
+                      r.viewerStarred
+                        ? "border-violet-400/20 bg-violet-600/25 text-white"
+                        : "border-white/10 bg-slate-950/35 text-slate-200 hover:bg-slate-900/45"
+                    }`}
+                  >
+                    <NinjaStar className={`h-5 w-5 ${r.viewerStarred ? "text-white" : "text-violet-300"}`} />
+                    <span className="font-semibold">{r.starsCount}</span>
+                  </button>
+
+                  {isOwner && (
+                    <button
+                      onClick={() => {
+                        setMobileActionsOpen(false);
+                        setEditing((v) => !v);
+                      }}
+                      className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-slate-950/35 text-slate-200 backdrop-blur-xl transition hover:bg-slate-900/45"
+                      aria-label={editing ? "Close recipe editor" : "Edit recipe"}
+                    >
+                      <Pencil className="h-5 w-5" />
+                    </button>
+                  )}
+
+                  {canShare && (
+                    <button
+                      onClick={() => {
+                        setMobileActionsOpen(false);
+                        setShareOpen(true);
+                      }}
+                      className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-slate-950/35 text-slate-200 backdrop-blur-xl transition hover:bg-slate-900/45"
+                      aria-label="Share recipe"
+                    >
+                      <Share2 className="h-5 w-5" />
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      setMobileActionsOpen(false);
+                      void exportAsImage();
+                    }}
+                    disabled={exporting}
+                    className="flex min-w-[92px] items-center justify-center gap-2 rounded-2xl border border-violet-400/20 bg-violet-600/25 px-4 py-3 text-white backdrop-blur-xl transition hover:bg-violet-500/30 disabled:opacity-60"
+                  >
+                    {exporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <span className="text-xl">📸</span>}
+                  </button>
+                </div>
+              )}
+
+              <button
+                onClick={() => setMobileActionsOpen((v) => !v)}
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-transparent text-slate-200 transition hover:bg-slate-900/20"
+                aria-label={mobileActionsOpen ? "Hide recipe actions" : "Show recipe actions"}
+              >
+                <ChevronLeft className={`h-5 w-5 transition-transform ${mobileActionsOpen ? "-rotate-180" : ""}`} />
+              </button>
+            </div>
+
+            {/* Desktop actions */}
+            <div className="hidden sm:flex sm:flex-row sm:items-center sm:gap-3">
               <button
                 onClick={user ? toggleStar : () => nav("/register")}
                 className={`group flex items-center gap-2 rounded-2xl border px-5 py-3 backdrop-blur-xl transition-all active:scale-95 shadow-lg ${
@@ -330,25 +402,25 @@ export default function RecipeDetail() {
                   className="gap-2 rounded-2xl border border-white/10 bg-slate-900/55 px-5 py-3 shadow-lg backdrop-blur-xl"
                 >
                   <Pencil className="h-5 w-5" />
-                  <span className="hidden sm:inline">{editing ? "Close" : "Edit"}</span>
+                  <span>{editing ? "Close" : "Edit"}</span>
                 </Button>
               )}
-              
+
               {canShare && (
                 <Button variant="secondary" onClick={() => setShareOpen(true)} className="gap-2 rounded-2xl border border-white/10 bg-slate-900/55 px-5 py-3 shadow-lg backdrop-blur-xl">
                   <Share2 className="h-5 w-5" />
-                  <span className="hidden sm:inline">Share</span>
+                  <span>Share</span>
                 </Button>
               )}
-              
-              <Button 
-                variant="primary" 
-                onClick={exportAsImage} 
+
+              <Button
+                variant="primary"
+                onClick={exportAsImage}
                 disabled={exporting}
-                className="gap-2 rounded-2xl px-5 py-3 shadow-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white border-0 hover:shadow-violet-500/40"
+                className="gap-2 rounded-2xl border-0 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 text-white shadow-lg hover:shadow-violet-500/40"
               >
                 {exporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <span className="text-xl">📸</span>}
-                <span className="hidden sm:inline">{exporting ? "Exporting..." : "Export"}</span>
+                <span>{exporting ? "Exporting..." : "Export"}</span>
               </Button>
             </div>
           </div>
@@ -510,8 +582,21 @@ function splitDescriptionAndMacros(description?: string | null) {
   const macroMatch = text.match(/(?:approx\.?\s*)?\d+\s*(?:k?cal|cals?)\b.*$/i);
   if (!macroMatch) return { flavor: text, macros: "" };
 
-  const flavor = text.slice(0, macroMatch.index).trim().replace(/[.\s]+$/, "");
-  const macros = macroMatch[0].trim();
+  const flavor = text
+    .slice(0, macroMatch.index)
+    .trim()
+    .replace(/[\s([{-]*[.,;:!?]*[\s([{-]*$/g, "")
+    .replace(/[.\s]+$/, "");
+
+  const rawMacros = macroMatch[0].trim();
+  const macros = rawMacros
+    .replace(/^[)\].,;\s}]+/, "")
+    .replace(/[)\]}]+$/g, (match) => {
+      const opens = (rawMacros.match(/[[({]/g) || []).length;
+      const closes = (rawMacros.match(/[])}]/g) || []).length;
+      return closes > opens ? "" : match;
+    });
+
   return {
     flavor: flavor ? `${flavor}.` : "",
     macros
