@@ -592,8 +592,8 @@ function splitDescriptionAndMacros(description?: string | null) {
   const macros = rawMacros
     .replace(/^[)\].,;\s}]+/, "")
     .replace(/[)\]}]+$/g, (match) => {
-      const opens = (rawMacros.match(/[[({]/g) || []).length;
-      const closes = (rawMacros.match(/[])}]/g) || []).length;
+      const opens = countChars(rawMacros, "([{");
+      const closes = countChars(rawMacros, ")]}");
       return closes > opens ? "" : match;
     });
 
@@ -601,6 +601,14 @@ function splitDescriptionAndMacros(description?: string | null) {
     flavor: flavor ? `${flavor}.` : "",
     macros
   };
+}
+
+function countChars(value: string, chars: string) {
+  let count = 0;
+  for (const ch of value) {
+    if (chars.includes(ch)) count += 1;
+  }
+  return count;
 }
 
 async function renderRecipeExport(recipe: Recipe) {
