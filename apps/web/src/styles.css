@@ -34,6 +34,10 @@ html, body {
   padding-right: env(safe-area-inset-right);
 }
 
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
 /* Ninja star throwing animation */
 @keyframes throw {
   0% {

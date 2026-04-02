@@ -2,11 +2,14 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
+const PWA_VERSION = "2026-04-02-5";
+
 export default defineConfig({
   plugins: [
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: "auto",
       includeAssets: [
         "icons/icon-192.png",
         "icons/icon-512.png",
@@ -34,6 +37,10 @@ export default defineConfig({
         ]
       },
       workbox: {
+        cacheId: `creamininja-${PWA_VERSION}`,
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff2}"],
         runtimeCaching: [
           {

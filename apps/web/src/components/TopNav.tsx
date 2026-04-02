@@ -18,7 +18,7 @@ export function TopNav() {
   }
 
   return (
-    <div className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/60 backdrop-blur-xl shadow-lg shadow-black/20">
+    <div className="safe-area-inset safe-area-top sticky top-0 z-50 border-b border-white/5 bg-slate-950/85 backdrop-blur-xl shadow-lg shadow-black/20">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
