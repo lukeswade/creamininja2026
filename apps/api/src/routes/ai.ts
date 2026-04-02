@@ -27,12 +27,60 @@ router.use(
 const RecipeSchema = z.object({
   title: z.string().min(1).max(60),
   category: z.string().min(1).max(40),
-  description: z.string().max(120),
-  ingredients: z.array(z.string().min(1).max(120)).min(3).max(6),
-  steps: z.array(z.string().min(1).max(280)).min(3).max(5),
-  notes: z.array(z.string().min(1).max(160)).max(2).optional(),
-  allergens: z.array(z.string().min(1).max(40)).max(3).optional()
+  description: z.string().max(160),
+  ingredients: z.array(z.string().min(1).max(120)).min(2).max(8),
+  steps: z.array(z.string().min(1).max(280)).min(2).max(6),
+  notes: z.array(z.string().min(1).max(160)).max(3).optional(),
+  allergens: z.array(z.string().min(1).max(40)).max(4).optional()
 });
+
+function clampString(value: unknown, max: number) {
+  return String(value ?? "").trim().replace(/\s+/g, " ").slice(0, max);
+}
+
+function coerceStringList(value: unknown, maxItems: number, maxChars: number) {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => clampString(item, maxChars))
+      .filter(Boolean)
+      .slice(0, maxItems);
+  }
+
+  if (typeof value === "string") {
+    return value
+      .split(/\n|•|- |\d+\.\s+/)
+      .map((item) => clampString(item, maxChars))
+      .filter(Boolean)
+      .slice(0, maxItems);
+  }
+
+  return [];
+}
+
+function normalizeAiRecipe(raw: any, validCategories: string[], fallbackCategory?: string) {
+  const title = clampString(raw?.title || raw?.name || raw?.recipeName, 60);
+  const description = clampString(raw?.description || raw?.summary || raw?.blurb, 160);
+  const ingredients = coerceStringList(raw?.ingredients, 8, 120);
+  const steps = coerceStringList(raw?.steps || raw?.instructions || raw?.method, 6, 280);
+  const notes = coerceStringList(raw?.notes, 3, 160);
+  const allergens = coerceStringList(raw?.allergens, 4, 40);
+  const rawCategory = clampString(raw?.category, 40);
+  const category = validCategories.includes(rawCategory)
+    ? rawCategory
+    : fallbackCategory && validCategories.includes(fallbackCategory)
+      ? fallbackCategory
+      : validCategories[0];
+
+  return {
+    title,
+    category,
+    description,
+    ingredients,
+    steps,
+    ...(notes.length ? { notes } : {}),
+    ...(allergens.length ? { allergens } : {})
+  };
+}
 
 function buildRecipeSystem(validCategories: string[], deluxeInstruction: string) {
   return [
@@ -82,7 +130,7 @@ Creativity level: ${body.creativity}.`;
       temperature: body.creativity === "wild" ? 0.8 : body.creativity === "safe" ? 0.35 : 0.55
     });
 
-    const parsed = RecipeSchema.safeParse(recipe);
+    const parsed = RecipeSchema.safeParse(normalizeAiRecipe(recipe, validCategories, body.category));
     if (!parsed.success) {
       return c.json(badRequest("Model output did not match schema", parsed.error.flatten()), 400);
     }
@@ -133,7 +181,7 @@ router.post("/from-image", zValidator("json", GenFromImage), async (c) => {
       temperature: 0.45
     });
 
-    const parsed = RecipeSchema.safeParse(recipe);
+    const parsed = RecipeSchema.safeParse(normalizeAiRecipe(recipe, validCategories, category));
     if (!parsed.success) return c.json(badRequest("Model output did not match schema", parsed.error.flatten()), 400);
 
     return c.json(jsonOk({ ok: true, recipe: parsed.data }));
@@ -178,7 +226,7 @@ router.post("/from-description", zValidator("json", GenFromDescription), async (
       temperature: 0.55
     });
 
-    const parsed = RecipeSchema.safeParse(recipe);
+    const parsed = RecipeSchema.safeParse(normalizeAiRecipe(recipe, validCategories));
     if (!parsed.success) return c.json(badRequest("Model output did not match schema", parsed.error.flatten()), 400);
 
     return c.json(jsonOk({ ok: true, recipe: parsed.data }));
@@ -240,7 +288,7 @@ router.post("/surprise", zValidator("json", SurpriseSchema), async (c) => {
       temperature: 0.75
     });
 
-    const parsed = RecipeSchema.safeParse(recipe);
+    const parsed = RecipeSchema.safeParse(normalizeAiRecipe(recipe, validPool, category));
     if (!parsed.success) {
       return c.json(badRequest("Model output did not match schema", parsed.error.flatten()), 400);
     }
