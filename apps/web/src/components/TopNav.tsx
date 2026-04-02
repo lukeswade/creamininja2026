@@ -58,9 +58,12 @@ export function TopNav() {
           
           {user && (
             <div className="ml-2 pl-4 border-l border-white/10 hidden md:block">
-              <Button onClick={() => nav("/create")} className="h-9 px-4 text-sm font-bold gap-2 shadow-lg shadow-violet-500/20 active:scale-95 transition-all">
+              <Button
+                onClick={() => nav("/create")}
+                className="h-8 gap-2 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 text-sm font-bold lowercase text-white shadow-lg shadow-violet-500/20 transition-all active:scale-95 hover:shadow-violet-500/35"
+              >
                 <PlusCircle className="h-4 w-4" />
-                Create Recipe
+                create
               </Button>
             </div>
           )}

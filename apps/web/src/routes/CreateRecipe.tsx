@@ -49,6 +49,27 @@ export default function CreateRecipe() {
   // Surprise Me
   const [surpriseBusy, setSurpriseBusy] = React.useState(false);
 
+  function renderDeluxeToggle(compact = false) {
+    return (
+      <div
+        className={`flex items-center justify-between gap-4 rounded-xl border border-violet-500/20 bg-violet-950/20 shadow-inner transition-colors ${
+          compact ? "px-4 py-3" : "mb-6 px-4 py-3"
+        }`}
+      >
+        <div className="flex flex-col">
+          <div className="font-bold text-slate-200">👑 Ninja CREAMi Deluxe (24oz)</div>
+          <div className={`text-violet-300 ${compact ? "mt-0.5 text-xs" : "mt-0.5 text-xs"}`}>
+            Unlock 24oz AI scaling and Deluxe-exclusive categories.
+          </div>
+        </div>
+        <label className="relative inline-flex cursor-pointer items-center">
+          <input type="checkbox" checked={isDeluxe} onChange={(e) => setIsDeluxe(e.target.checked)} className="sr-only peer" />
+          <div className="h-6 w-11 rounded-full bg-slate-800 shadow-inner peer-focus:outline-none peer-checked:bg-violet-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-slate-300 after:bg-slate-300 after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white peer-checked:after:bg-white" />
+        </label>
+      </div>
+    );
+  }
+
   function applyAiRecipe(r: AiRecipe) {
     setTitle(r.title ?? "");
     setDescription(r.description ?? "");
@@ -221,6 +242,7 @@ export default function CreateRecipe() {
               Describe your wildest idea. The AI will instantly engineer the perfect CREAMi recipe, complete with precise macros and hardware instructions.
             </p>
           </div>
+          {renderDeluxeToggle(true)}
           <div className="w-full rounded-2xl shadow-2xl">
             <textarea
               className="w-full rounded-2xl border-2 border-violet-500/50 bg-slate-950/60 px-5 py-5 text-base text-slate-100 shadow-inner backdrop-blur-md transition-all focus:border-violet-400 focus:bg-slate-950/80 focus:outline-none focus:ring-4 focus:ring-violet-500/30 placeholder-slate-500 min-h-[120px]"
@@ -305,16 +327,7 @@ export default function CreateRecipe() {
         <div className="text-lg font-semibold">Create a recipe</div>
         <div className="mt-1 text-sm text-slate-400 mb-6">Fill in the basics. Only title and category are required.</div>
 
-        <div className="flex items-center justify-between gap-4 border border-violet-500/20 bg-violet-950/20 rounded-xl px-4 py-3 mb-6 shadow-inner transition-colors">
-          <div className="flex flex-col">
-             <div className="font-bold text-slate-200">👑 Ninja CREAMi Deluxe (24oz)</div>
-             <div className="text-xs text-violet-300 mt-0.5">Unlock 24oz AI scaling and Deluxe-exclusive categories.</div>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" checked={isDeluxe} onChange={e => setIsDeluxe(e.target.checked)} className="sr-only peer" />
-            <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 peer-checked:after:bg-white after:border-slate-300 peer-checked:after:border-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600 shadow-inner"></div>
-          </label>
-        </div>
+        {renderDeluxeToggle()}
 
         <div className="grid gap-3 md:grid-cols-2">
           <div>
