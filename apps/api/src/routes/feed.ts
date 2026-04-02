@@ -76,7 +76,7 @@ router.get("/network", authOptional, async (c) => {
   const items = await all<any>(
     c.env,
     `${base.sql}
-     WHERE
+     WHERE (
        (r.visibility = 'public')
        OR (r.author_id = ?)
        OR (r.visibility = 'restricted' AND EXISTS(
@@ -85,6 +85,7 @@ router.get("/network", authOptional, async (c) => {
        OR (r.visibility = 'private' AND EXISTS(
             SELECT 1 FROM recipe_shares rs WHERE rs.recipe_id = r.id AND rs.shared_with_user_id = ?
          ))
+     )
      AND r.created_at >= ${dt}
      ${extraWhere}
      ${orderBy}

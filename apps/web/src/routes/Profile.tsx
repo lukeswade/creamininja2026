@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -27,14 +27,15 @@ type ProfileResp = {
 
 export default function Profile() {
   const { handle } = useParams<{ handle: string }>();
-  const { user: me } = useAuth();
-  const nav = useNavigate();
+  const cleanHandle = (handle || "").replace(/^@/, "");
+  const { user: me, csrfToken } = useAuth();
   const qc = useQueryClient();
   const [busy, setBusy] = React.useState(false);
 
   const q = useQuery({
-    queryKey: ["profile", handle],
-    queryFn: () => api<ProfileResp>(`/users/${handle}`, { method: "GET" })
+    queryKey: ["profile", cleanHandle],
+    queryFn: () => api<ProfileResp>(`/users/${cleanHandle}`, { method: "GET" }),
+    enabled: !!cleanHandle
   });
 
   async function addFriend() {
@@ -42,25 +43,26 @@ export default function Profile() {
     setBusy(true);
     await api("/friends/request", {
       method: "POST",
-      body: JSON.stringify({ toUserId: q.data.user.id })
+      body: JSON.stringify({ toUserId: q.data.user.id }),
+      csrf: csrfToken || ""
     });
-    qc.invalidateQueries({ queryKey: ["profile", handle] });
+    qc.invalidateQueries({ queryKey: ["profile", cleanHandle] });
     setBusy(false);
   }
 
   async function unfriend() {
     if (!me || !q.data) return;
     setBusy(true);
-    await api(`/friends/${q.data.user.id}`, { method: "DELETE" });
-    qc.invalidateQueries({ queryKey: ["profile", handle] });
+    await api(`/friends/${q.data.user.id}`, { method: "DELETE", csrf: csrfToken || "" });
+    qc.invalidateQueries({ queryKey: ["profile", cleanHandle] });
     setBusy(false);
   }
 
   function refetch() {
-    qc.invalidateQueries({ queryKey: ["profile", handle] });
+    qc.invalidateQueries({ queryKey: ["profile", cleanHandle] });
   }
 
-  const isOwnProfile = me?.handle === handle;
+  const isOwnProfile = me?.handle === cleanHandle;
 
   if (q.isLoading) {
     return (
@@ -137,10 +139,10 @@ export default function Profile() {
             </div>
             <div className="flex gap-2">
               {isOwnProfile ? (
-                <Link to="/settings">
+                <Link to="/create">
                   <Button variant="secondary" className="gap-2">
                     <Settings className="h-4 w-4" />
-                    Edit profile
+                    Create recipe
                   </Button>
                 </Link>
               ) : me ? (

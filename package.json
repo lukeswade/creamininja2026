@@ -10,5 +10,9 @@
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "format": "pnpm -r format"
+  },
+  "devDependencies": {
+    "globals": "^17.4.0",
+    "typescript-eslint": "^8.58.0"
   }
 }

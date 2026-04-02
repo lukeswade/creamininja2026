@@ -6,6 +6,7 @@ import recipesRoutes from "./routes/recipes";
 import feedRoutes from "./routes/feed";
 import uploadsRoutes from "./routes/uploads";
 import aiRoutes from "./routes/ai";
+import usersRoutes from "./routes/users";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
 
@@ -39,6 +40,7 @@ app.route("/recipes", recipesRoutes);
 app.route("/feed", feedRoutes);
 app.route("/uploads", uploadsRoutes);
 app.route("/ai", aiRoutes);
+app.route("/users", usersRoutes);
 
 app.onError((err, c) => {
   console.error(err);

@@ -7,7 +7,21 @@ import { all, first, run } from "../db/sql";
 import { badRequest, jsonOk, notFound } from "../util/http";
 import { newId } from "../util/crypto";
 
-const router = new Hono<{ Bindings: Env }>();
+type AuthedUser = {
+  id: string;
+  email: string;
+  displayName: string;
+  handle: string;
+  avatarKey: string | null;
+};
+
+type HonoVars = {
+  user: AuthedUser;
+  session: { id: string; csrfToken: string };
+  secureHeadersNonce?: string;
+};
+
+const router = new Hono<{ Bindings: Env; Variables: HonoVars }>();
 
 router.use("*", authOptional, requireAuth, requireCsrf);
 

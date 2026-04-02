@@ -144,11 +144,24 @@ export default function RecipeDetail() {
   async function exportAsImage() {
     if (!exportRef.current || exporting || !r) return;
     setExporting(true);
+    let mountedNode: HTMLDivElement | null = null;
     try {
-      // Prime the internal renderer cache to ensure fonts/layout are flushed before capturing 
-      await htmlToImage.toPng(exportRef.current, { cacheBust: true, pixelRatio: 1 });
-      
-      const dataUrl = await htmlToImage.toPng(exportRef.current, { cacheBust: true, pixelRatio: 2 });
+      mountedNode = exportRef.current.cloneNode(true) as HTMLDivElement;
+      mountedNode.style.position = "fixed";
+      mountedNode.style.left = "-10000px";
+      mountedNode.style.top = "0";
+      mountedNode.style.zIndex = "9999";
+      mountedNode.style.opacity = "1";
+      mountedNode.style.pointerEvents = "none";
+      document.body.appendChild(mountedNode);
+
+      await inlineExportImages(mountedNode);
+
+      const dataUrl = await htmlToImage.toPng(mountedNode, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "#020617"
+      });
       const link = document.createElement("a");
       link.download = `CreamiNinja-${r.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.png`;
       link.href = dataUrl;
@@ -157,6 +170,7 @@ export default function RecipeDetail() {
       console.error(err);
       alert("Failed to export image");
     } finally {
+      mountedNode?.remove();
       setExporting(false);
     }
   }
@@ -356,7 +370,7 @@ export default function RecipeDetail() {
       {/* Hidden Export Node (rendered under the layout to prevent blank paints on Safari/Chrome) */}
       <div 
         ref={exportRef}
-        className="fixed top-0 left-0 -z-50 opacity-0 w-[600px] pointer-events-none p-8"
+        className="fixed top-0 left-[-10000px] z-[-1] w-[600px] pointer-events-none p-8"
       >
         <div className="bg-slate-900/90 rounded-3xl overflow-hidden border border-white/10 flex flex-col shadow-2xl">
           {r.imageKey ? (
@@ -386,10 +400,12 @@ export default function RecipeDetail() {
             </div>
 
             <div className="flex items-center gap-4">
-              <img 
-                src={r.author.avatarKey ? `${API_BASE}/uploads/file/${encodeURIComponent(r.author.avatarKey)}` : `https://api.dicebear.com/7.x/open-peeps/svg?seed=${r.author.handle}`}
-                className="w-12 h-12 rounded-full border border-slate-700 bg-slate-800"
-                crossOrigin="anonymous" 
+              <Avatar
+                handle={r.author.handle}
+                avatarKey={r.author.avatarKey}
+                name={r.author.displayName}
+                size={48}
+                className="border-slate-700 bg-slate-800"
               />
               <div>
                 <div className="text-lg font-bold text-slate-100">{r.author.displayName}</div>
@@ -438,4 +454,38 @@ export default function RecipeDetail() {
       </div>
     </div>
   );
+}
+
+async function inlineExportImages(node: HTMLElement) {
+  const images = Array.from(node.querySelectorAll("img"));
+  await Promise.all(
+    images.map(async (img) => {
+      const src = img.currentSrc || img.src;
+      if (!src) return;
+
+      try {
+        const res = await fetch(
+          src,
+          src.startsWith(API_BASE) ? { credentials: "include" } : undefined
+        );
+        if (!res.ok) throw new Error(`Image fetch failed: ${res.status}`);
+
+        const blob = await res.blob();
+        img.src = await blobToDataUrl(blob);
+        img.removeAttribute("srcset");
+        await img.decode().catch(() => undefined);
+      } catch (err) {
+        console.warn("export_image_inline_failed", src, err);
+      }
+    })
+  );
+}
+
+function blobToDataUrl(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
 }

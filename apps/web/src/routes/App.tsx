@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useParams } from "react-router-dom";
 import { AuthProvider, useAuth } from "../lib/auth";
 import { TopNav } from "../components/TopNav";
 import { BottomNav } from "../components/BottomNav";
@@ -18,6 +18,11 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   if (loading) return <div className="p-6 text-slate-300">Loading...</div>;
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
+}
+
+function LegacyProfileRedirect() {
+  const { handle } = useParams();
+  return <Navigate to={`/@${handle || ""}`} replace />;
 }
 
 export default function App() {
@@ -41,7 +46,8 @@ export default function App() {
             }
           />
           <Route path="/recipes/:id" element={<RecipeDetail />} />
-          <Route path="/u/:handle" element={<Profile />} />
+          <Route path="/@:handle" element={<Profile />} />
+          <Route path="/u/:handle" element={<LegacyProfileRedirect />} />
           <Route
             path="/friends"
             element={

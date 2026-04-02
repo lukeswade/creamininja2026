@@ -4,7 +4,7 @@ import { Button } from "./Button";
 import { useAuth } from "../lib/auth";
 import { api } from "../lib/api";
 import { Avatar } from "./Avatar";
-import { Home, Users, PlusCircle, LogOut, Menu, X, Image } from "lucide-react";
+import { Home, Users, PlusCircle, LogOut, Image } from "lucide-react";
 import { motion } from "framer-motion";
 
 export function TopNav() {

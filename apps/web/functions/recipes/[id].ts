@@ -2,6 +2,19 @@ interface Env {
   API_BASE?: string;
 }
 
+interface RecipeMeta {
+  title: string;
+  description?: string | null;
+  category: string;
+  ingredients: string[];
+  imageKey?: string | null;
+  visibility: "private" | "restricted" | "public";
+}
+
+interface RecipeResponse {
+  recipe?: RecipeMeta;
+}
+
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const { request, env, params, next } = context;
 
@@ -30,7 +43,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     const apiRes = await fetch(`${apiBase}/recipes/${id}`);
     if (apiRes.ok) {
-      const data = await apiRes.json() as any;
+      const data = await apiRes.json() as RecipeResponse;
       const r = data.recipe;
 
       if (r && r.visibility === "public") {

@@ -39,7 +39,6 @@ export default function CreateRecipe() {
 
   // AI helpers
   const [aiDescription, setAiDescription] = React.useState("");
-  const [aiIngredients, setAiIngredients] = React.useState("");
   const [aiBusy, setAiBusy] = React.useState(false);
   const [aiPhotoKey, setAiPhotoKey] = React.useState<string | null>(null);
   const [isUploading, setIsUploading] = React.useState(false);
@@ -136,34 +135,6 @@ export default function CreateRecipe() {
       setErr(e.message);
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function aiGenerate() {
-    setAiBusy(true);
-    setErr(null);
-    try {
-      const ingredients = aiIngredients
-        .split(/\n|,/)
-        .map((s) => s.trim())
-        .filter(Boolean);
-
-      // If user hasn't chosen a category, we can either error or default.
-      // Here: default to Ice Cream to keep flow smooth.
-      const cat = category.trim() ? category : "Ice Cream";
-
-      const res = await api<{ ok: true; recipe: AiRecipe }>("/ai/from-ingredients", {
-        method: "POST",
-        csrf: csrfToken || "",
-        body: JSON.stringify({ ingredients, category: cat, creativity: "balanced" })
-      });
-
-      applyAiRecipe({ ...res.recipe, category: res.recipe.category || cat });
-      window.scrollTo({ top: window.innerHeight * 0.4, behavior: "smooth" });
-    } catch (e: any) {
-      setErr(e.message);
-    } finally {
-      setAiBusy(false);
     }
   }
 

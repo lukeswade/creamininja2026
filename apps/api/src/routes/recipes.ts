@@ -108,6 +108,22 @@ function recipeSelect(viewerId: string | null): { sql: string; params: any[] } {
   };
 }
 
+async function generateRecipeImage(env: Env, recipeId: string, title: string, category: string) {
+  if (!env.AI) return { updated: false, reason: "AI binding unavailable" as const };
+
+  const prompt = `Professional food photography, a single delicious pint of ${title} ${category} dessert, creamy texture, resting on a modern kitchen counter next to ingredients, soft daylight lighting, high resolution, extreme detail, photorealistic.`;
+  const response = await env.AI.run("@cf/stabilityai/stable-diffusion-xl-base-1.0", { prompt });
+  if (!response) return { updated: false, reason: "AI returned no image" as const };
+
+  const buffer = await new Response(response).arrayBuffer();
+  if (buffer.byteLength <= 100) return { updated: false, reason: "Generated image was empty" as const };
+
+  const key = `recipe/auto-${newId("img")}.png`;
+  await env.UPLOADS.put(key, buffer, { httpMetadata: { contentType: "image/png" } });
+  await run(env, "UPDATE recipes SET image_key = ?, updated_at = datetime('now') WHERE id = ?", [key, recipeId]);
+  return { updated: true, key };
+}
+
 router.get("/:id", authOptional, async (c) => {
   const id = c.req.param("id");
   const viewer = c.get("user")?.id ?? null;
@@ -181,7 +197,7 @@ router.post("/", zValidator("json", RecipeCreateSchema), async (c) => {
   const me = c.get("user")!;
   const body = c.req.valid("json");
 
-  let imageKey = body.imageKey ?? null;
+  const imageKey = body.imageKey ?? null;
   const id = newId("rcp");
 
   // If no image provided, trigger background generation
@@ -189,19 +205,9 @@ router.post("/", zValidator("json", RecipeCreateSchema), async (c) => {
     c.executionCtx.waitUntil(
       (async () => {
         try {
-          const prompt = `Professional food photography, a single delicious pint of ${body.title} ${body.category} dessert, creamy texture, resting on a modern kitchen counter next to ingredients, soft daylight lighting, high resolution, extreme detail, photorealistic.`;
-          const response = await c.env.AI.run("@cf/stabilityai/stable-diffusion-xl-base-1.0", { prompt });
-          
-          if (response) {
-            const buffer = await new Response(response).arrayBuffer();
-            if (buffer.byteLength > 100) {
-              const key = `recipe/auto-${newId("img")}.png`;
-              await c.env.UPLOADS.put(key, buffer, { httpMetadata: { contentType: "image/png" } });
-              
-              // Update the recipe record with the new key in the background
-              await run(c.env, "UPDATE recipes SET image_key = ? WHERE id = ?", [key, id]);
-              console.info(`Background AI Image Generated: ${key} for recipe ${id}`);
-            }
+          const result = await generateRecipeImage(c.env, id, body.title, body.category);
+          if (result.updated) {
+            console.info(`Background AI Image Generated: ${result.key} for recipe ${id}`);
           }
         } catch (err) {
           console.error("BACKGROUND ERR: Failed to auto-generate image:", err);

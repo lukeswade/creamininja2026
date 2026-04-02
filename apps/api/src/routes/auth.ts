@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { Env } from "../env";
 import { zValidator } from "@hono/zod-validator";
 import { hashPassword, newId, randomToken, sha256Base64url, verifyPassword } from "../util/crypto";
-import { all, first, run } from "../db/sql";
+import { first, run } from "../db/sql";
 import { badRequest, jsonOk, unauthorized } from "../util/http";
 import { serializeCookie } from "../util/cookies";
 import { authOptional, requireAuth, requireCsrf } from "../middleware/auth";

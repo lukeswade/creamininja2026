@@ -24,6 +24,7 @@ export function Avatar({
   size?: AvatarSize;
   className?: string;
 }) {
+  const [imageFailed, setImageFailed] = React.useState(false);
   const displayName = name || handle || "?";
   const pixelSize = typeof size === "number" ? size : sizeMap[size];
   const fontSize = pixelSize < 32 ? "text-xs" : pixelSize < 48 ? "text-sm" : "text-base";
@@ -36,7 +37,11 @@ export function Avatar({
     .join("")
     .slice(0, 2);
 
-  if (avatarKey) {
+  React.useEffect(() => {
+    setImageFailed(false);
+  }, [avatarKey]);
+
+  if (avatarKey && !imageFailed) {
     return (
       <img
         src={`${API_BASE}/uploads/file/${encodeURIComponent(avatarKey)}`}
@@ -46,6 +51,7 @@ export function Avatar({
         className={`rounded-full border border-slate-700 object-cover ${className}`}
         style={{ width: pixelSize, height: pixelSize }}
         loading="lazy"
+        onError={() => setImageFailed(true)}
       />
     );
   }

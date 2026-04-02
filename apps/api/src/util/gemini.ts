@@ -84,7 +84,7 @@ export async function geminiGenerateJSON<T>(args: GeminiGenerateArgs): Promise<T
   
   try {
     return JSON.parse(cleaned) as T;
-  } catch (e) {
+  } catch {
     const extracted = extractJsonBlock(cleaned);
     if (extracted) {
       try {

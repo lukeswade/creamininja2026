@@ -21,7 +21,8 @@ type HonoVars = {
 };
 
 const router = new Hono<{ Bindings: Env; Variables: HonoVars }>();
-router.use("*", authOptional, requireAuth, requireCsrf);
+router.use("/presign", authOptional, requireAuth, requireCsrf);
+router.use("/set-avatar", authOptional, requireAuth, requireCsrf);
 
 const PresignSchema = z.object({
   kind: z.enum(["avatar", "recipe"]),
@@ -94,18 +95,14 @@ router.post("/set-avatar", zValidator("json", AvatarUpdateSchema), async (c) => 
   return c.json(jsonOk({ ok: true }));
 });
 
-router.get("/file/:key{.+}", authOptional, requireAuth, async (c) => {
+router.get("/file/:key{.+}", authOptional, async (c) => {
   const me = c.get("user");
   const key = c.req.param("key");
 
   // Enforce access:
-  // - avatar/*: if the avatar belongs to me OR belongs to a friend
-  // - recipe/*: only if key is referenced by a recipe the user can view OR recipe author (or public)
+  // - avatar/*: public, since avatars are rendered anywhere a public profile/post appears
+  // - recipe/*: public if the recipe is public, otherwise only to an allowed viewer
   if (key.startsWith("avatar/")) {
-    const ownerId = key.split("/")[1];
-    if (ownerId === me.id) return await streamR2(c, key);
-    const friend = await first<{ user_id: string }>(c.env, "SELECT user_id FROM friendships WHERE user_id = ? AND friend_id = ?", [me.id, ownerId]);
-    if (!friend) return c.json(forbidden(), 403);
     return await streamR2(c, key);
   }
 
@@ -117,7 +114,7 @@ router.get("/file/:key{.+}", authOptional, requireAuth, async (c) => {
       [key]
     );
     if (!r) return c.json(notFound(), 404);
-    const can = await canViewRecipe(c.env, me.id, r.id, r.author_id, r.visibility);
+    const can = await canViewRecipe(c.env, me?.id ?? null, r.id, r.author_id, r.visibility);
     if (!can) return c.json(forbidden(), 403);
     return await streamR2(c, key);
   }
@@ -142,9 +139,10 @@ async function streamR2(c: any, key: string) {
   return new Response(obj.body, { headers });
 }
 
-async function canViewRecipe(env: Env, viewerId: string, recipeId: string, authorId: string, visibility: string) {
-  if (authorId === viewerId) return true;
+async function canViewRecipe(env: Env, viewerId: string | null, recipeId: string, authorId: string, visibility: string) {
+  if (viewerId && authorId === viewerId) return true;
   if (visibility === "public") return true;
+  if (!viewerId) return false;
   if (visibility === "restricted") {
     const f = await first<{ user_id: string }>(env, "SELECT user_id FROM friendships WHERE user_id = ? AND friend_id = ?", [viewerId, authorId]);
     return !!f;
