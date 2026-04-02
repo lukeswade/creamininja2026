@@ -585,8 +585,8 @@ function splitDescriptionAndMacros(description?: string | null) {
   const flavor = text
     .slice(0, macroMatch.index)
     .trim()
-    .replace(/[\s([{-]*[.,;:!?]*[\s([{-]*$/g, "")
-    .replace(/[.\s]+$/, "");
+    .replace(/[\s~([{-]*[.,;:!?]*[\s~([{-]*$/g, "")
+    .replace(/[~.\s]+$/, "");
 
   const rawMacros = macroMatch[0].trim();
   const macros = rawMacros
