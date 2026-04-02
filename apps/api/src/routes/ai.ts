@@ -74,7 +74,8 @@ Creativity level: ${body.creativity}.`;
   try {
     const recipe = await geminiGenerateJSON<any>({
       apiKey: c.env.GEMINI_API_KEY,
-      model: "gemini-2.0-flash-001",
+      model: "gemini-3.1-flash-lite",
+      fallbacks: ["gemini-2.5-flash-lite", "gemini-3-flash-preview"],
       system,
       user: userPrompt,
       maxOutputTokens: 650,
@@ -123,7 +124,8 @@ router.post("/from-image", zValidator("json", GenFromImage), async (c) => {
   try {
     const recipe = await geminiGenerateJSON<any>({
       apiKey: c.env.GEMINI_API_KEY,
-      model: "gemini-2.0-flash-001",
+      model: "gemini-3.1-flash-lite",
+      fallbacks: ["gemini-2.5-flash-lite", "gemini-3-flash-preview"],
       system,
       user: userPrompt,
       image: { mimeType: contentType, base64: b64 },
@@ -168,7 +170,8 @@ router.post("/from-description", zValidator("json", GenFromDescription), async (
   try {
     const recipe = await geminiGenerateJSON<any>({
       apiKey: c.env.GEMINI_API_KEY,
-      model: "gemini-2.0-flash-001",
+      model: "gemini-3.1-flash-lite",
+      fallbacks: ["gemini-2.5-flash-lite", "gemini-3-flash-preview"],
       system,
       user: userPrompt,
       maxOutputTokens: 650,
@@ -229,7 +232,8 @@ router.post("/surprise", zValidator("json", SurpriseSchema), async (c) => {
   try {
     const recipe = await geminiGenerateJSON<any>({
       apiKey: c.env.GEMINI_API_KEY,
-      model: "gemini-2.0-flash-001",
+      model: "gemini-3.1-flash-lite",
+      fallbacks: ["gemini-2.5-flash-lite", "gemini-3-flash-preview"],
       system,
       user: userPrompt,
       maxOutputTokens: 650,

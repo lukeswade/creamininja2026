@@ -1,7 +1,8 @@
 // apps/api/src/util/gemini.ts
 export type GeminiGenerateArgs = {
   apiKey: string;
-  model?: string; // e.g. "gemini-2.0-flash-001"
+  model?: string;
+  fallbacks?: string[];
   system?: string;
   user: string;
   // Optional image bytes as base64 (no data: prefix)
@@ -27,12 +28,7 @@ function extractJsonBlock(s: string) {
   return s.slice(start, end + 1);
 }
 
-export async function geminiGenerateJSON<T>(args: GeminiGenerateArgs): Promise<T> {
-  if (!args.apiKey || args.apiKey === "undefined") {
-    throw new Error("GEMINI_API_KEY is missing. Check your .dev.vars or Cloudflare secrets.");
-  }
-  const model = args.model ?? "gemini-2.0-flash-001";
-
+async function runGeminiRequest<T>(args: GeminiGenerateArgs, model: string): Promise<T> {
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/` +
     `${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(args.apiKey)}`;
@@ -58,7 +54,6 @@ export async function geminiGenerateJSON<T>(args: GeminiGenerateArgs): Promise<T
     },
   };
 
-  // Gemini supports a system instruction field in v1beta
   if (args.system?.trim()) {
     body.systemInstruction = { parts: [{ text: args.system.trim() }] };
   }
@@ -81,7 +76,7 @@ export async function geminiGenerateJSON<T>(args: GeminiGenerateArgs): Promise<T
       .join("") ?? "";
 
   const cleaned = stripJsonFence(text);
-  
+
   try {
     return JSON.parse(cleaned) as T;
   } catch {
@@ -93,4 +88,37 @@ export async function geminiGenerateJSON<T>(args: GeminiGenerateArgs): Promise<T
     }
     throw new Error(`Invalid JSON from AI: ${cleaned.slice(0, 200)}...`);
   }
+}
+
+function shouldFallback(err: Error) {
+  const message = err.message.toLowerCase();
+  return (
+    message.includes("not found") ||
+    message.includes("not supported") ||
+    message.includes("quota exceeded") ||
+    message.includes("limit: 0") ||
+    message.includes("429")
+  );
+}
+
+export async function geminiGenerateJSON<T>(args: GeminiGenerateArgs): Promise<T> {
+  if (!args.apiKey || args.apiKey === "undefined") {
+    throw new Error("GEMINI_API_KEY is missing. Check your .dev.vars or Cloudflare secrets.");
+  }
+  const models = [args.model ?? "gemini-3.1-flash-lite", ...(args.fallbacks ?? [])];
+  let lastErr: Error | null = null;
+
+  for (let i = 0; i < models.length; i++) {
+    const model = models[i];
+    try {
+      return await runGeminiRequest<T>(args, model);
+    } catch (err: any) {
+      lastErr = err instanceof Error ? err : new Error(String(err));
+      if (i === models.length - 1 || !shouldFallback(lastErr)) break;
+      console.warn("gemini_model_fallback", { from: model, to: models[i + 1], reason: lastErr.message });
+      continue;
+    }
+  }
+
+  throw lastErr ?? new Error("Gemini generation failed");
 }
