@@ -579,7 +579,7 @@ function splitDescriptionAndMacros(description?: string | null) {
   const text = (description || "").trim();
   if (!text) return { flavor: "", macros: "" };
 
-  const macroMatch = text.match(/(?:approx\.?\s*)?\d+\s*(?:k?cal|cals?)\b.*$/i);
+  const macroMatch = text.match(/(?:~\s*)?(?:approx\.?\s*)?\d+\s*(?:k?cal|cals?)\b.*$/i);
   if (!macroMatch) return { flavor: text, macros: "" };
 
   const flavor = text
