@@ -111,24 +111,26 @@ router.get("/search", async (c) => {
 
 router.get("/requests", async (c) => {
   const me = c.get("user");
-  const incoming = await all<{ id: string; fromUserId: string; displayName: string; handle: string; createdAt: string }>(
-    c.env,
-    `SELECT fr.id, fr.from_user_id as fromUserId, u.display_name as displayName, u.handle, fr.created_at as createdAt
-     FROM friend_requests fr
-     JOIN users u ON u.id = fr.from_user_id
-     WHERE fr.to_user_id = ? AND fr.status = 'pending'
-     ORDER BY fr.created_at DESC`,
-    [me.id]
-  );
-  const outgoing = await all<{ id: string; toUserId: string; displayName: string; handle: string; createdAt: string }>(
-    c.env,
-    `SELECT fr.id, fr.to_user_id as toUserId, u.display_name as displayName, u.handle, fr.created_at as createdAt
-     FROM friend_requests fr
-     JOIN users u ON u.id = fr.to_user_id
-     WHERE fr.from_user_id = ? AND fr.status = 'pending'
-     ORDER BY fr.created_at DESC`,
-    [me.id]
-  );
+  const [incoming, outgoing] = await Promise.all([
+    all<{ id: string; fromUserId: string; displayName: string; handle: string; createdAt: string }>(
+      c.env,
+      `SELECT fr.id, fr.from_user_id as fromUserId, u.display_name as displayName, u.handle, fr.created_at as createdAt
+       FROM friend_requests fr
+       JOIN users u ON u.id = fr.from_user_id
+       WHERE fr.to_user_id = ? AND fr.status = 'pending'
+       ORDER BY fr.created_at DESC`,
+      [me.id]
+    ),
+    all<{ id: string; toUserId: string; displayName: string; handle: string; createdAt: string }>(
+      c.env,
+      `SELECT fr.id, fr.to_user_id as toUserId, u.display_name as displayName, u.handle, fr.created_at as createdAt
+       FROM friend_requests fr
+       JOIN users u ON u.id = fr.to_user_id
+       WHERE fr.from_user_id = ? AND fr.status = 'pending'
+       ORDER BY fr.created_at DESC`,
+      [me.id]
+    )
+  ]);
   return c.json(jsonOk({ ok: true, incoming, outgoing }));
 });
 
