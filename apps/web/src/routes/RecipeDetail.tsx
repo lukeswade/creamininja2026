@@ -222,7 +222,7 @@ export default function RecipeDetail() {
   return (
     <div className="grid gap-6">
       {/* Main content area */}
-      <div className="-mx-4 -mt-6 sm:mx-0 sm:mt-0 sm:overflow-hidden sm:rounded-[2.5rem] sm:border sm:border-white/10 sm:bg-slate-900/40 sm:backdrop-blur-xl sm:shadow-2xl sm:shadow-black/50">
+      <div className="-mx-4 -mt-6 sm:mx-0 sm:mt-0 sm:overflow-hidden sm:rounded-[2.5rem] glass-panel sm:shadow-glass-lg">
         {/* Image / Generation State */}
         <div className="relative aspect-square sm:aspect-auto sm:min-h-[400px] sm:h-[500px] bg-slate-950 overflow-hidden">
           <button
@@ -385,10 +385,10 @@ export default function RecipeDetail() {
             <div className="hidden sm:flex sm:flex-row sm:items-center sm:gap-3">
               <button
                 onClick={user ? toggleStar : () => nav("/register")}
-                className={`group flex items-center gap-2 rounded-2xl border px-5 py-3 backdrop-blur-xl transition-all active:scale-95 shadow-lg ${
+                className={`group flex items-center gap-2 rounded-2xl px-5 py-3 backdrop-blur-xl transition-all active:scale-95 shadow-glass-sm ${
                   r.viewerStarred
-                    ? "border-violet-400/30 bg-gradient-to-r from-violet-600/90 to-fuchsia-600/90 text-white shadow-violet-500/25"
-                    : "border-white/10 bg-slate-900/55 text-slate-300 hover:bg-slate-800/70 hover:text-white"
+                    ? "bg-white/90 text-slate-900 border border-white/40 shadow-glass"
+                    : "glass text-slate-300 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 <NinjaStar className={`h-6 w-6 ${r.viewerStarred ? "text-white" : "text-violet-400 group-hover:text-violet-300 transition-colors"}`} />

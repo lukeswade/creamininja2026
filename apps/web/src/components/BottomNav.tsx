@@ -17,7 +17,7 @@ export function BottomNav() {
   ].filter(l => !l.requireAuth || user);
 
   return (
-    <div className="safe-area-inset md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-slate-950/80 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]">
+    <div className="safe-area-inset md:hidden fixed bottom-0 left-0 right-0 z-50 glass-nav border-t border-white/10 pb-[env(safe-area-inset-bottom)]">
       <nav className="flex items-center justify-around px-2 h-16">
         {links.map(({ to, icon: Icon, label }) => {
           const isActive = location.pathname === to;

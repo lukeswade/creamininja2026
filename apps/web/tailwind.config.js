@@ -28,6 +28,12 @@ export default {
         shimmer: 'shimmer 2s infinite linear',
         'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'fade-in-up': 'fade-in-up 0.5s ease-out forwards',
+      },
+      boxShadow: {
+        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+        'glass-sm': '0 4px 16px 0 rgba(0, 0, 0, 0.2)',
+        'glass-lg': '0 12px 48px 0 rgba(0, 0, 0, 0.4)',
+        'glass-inset': 'inset 0 1px 1px 0 rgba(255, 255, 255, 0.1), 0 8px 32px 0 rgba(0, 0, 0, 0.3)',
       }
     }
   },

@@ -60,7 +60,7 @@ export function RecipeCard({ r, onMutate }: { r: RecipeSummary; onMutate?: () =>
   return (
     <Link
       to={`/recipes/${r.id}`}
-      className="group block overflow-hidden rounded-2xl border border-white/5 bg-slate-900/40 p-0 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-slate-900/60 hover:shadow-xl hover:shadow-violet-500/10"
+      className="group block overflow-hidden rounded-[2rem] glass-panel p-0 transition-all duration-500 hover:-translate-y-1 hover:shadow-glass-lg hover:border-white/20"
     >
       <div className="flex flex-col sm:flex-row">
         {/* Image */}
