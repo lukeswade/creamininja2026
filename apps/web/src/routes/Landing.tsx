@@ -29,7 +29,7 @@ export default function Landing() {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-slate-900/40 p-8 md:p-16 backdrop-blur-2xl shadow-2xl shadow-black/50"
+        className="relative overflow-hidden rounded-[2.5rem] glass-panel p-8 md:p-16 shadow-glass-lg"
       >
         <motion.div 
           animate={{ rotate: 360 }}
@@ -60,7 +60,7 @@ export default function Landing() {
           <div className="mt-8 flex flex-wrap gap-4">
             <Link 
               to="/feed" 
-              className="group inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-8 py-4 font-semibold text-white shadow-xl shadow-violet-500/25 transition-all active:scale-95 hover:shadow-violet-500/40 hover:brightness-110"
+              className="group inline-flex items-center gap-2 rounded-2xl bg-white/90 px-8 py-4 font-semibold text-slate-900 shadow-glass border border-white/40 backdrop-blur-md transition-all duration-300 active:scale-95 hover:bg-white hover:shadow-glass-lg"
             >
               <Zap className="h-5 w-5" />
               Explore recipes
@@ -68,14 +68,14 @@ export default function Landing() {
             {user ? (
               <Link 
                 to="/create" 
-                className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-800/50 px-8 py-4 font-semibold text-slate-100 backdrop-blur transition-all active:scale-95 hover:border-white/20 hover:bg-slate-700/50"
+                className="inline-flex items-center gap-2 rounded-2xl glass p-4 px-8 font-semibold text-slate-100 transition-all duration-300 active:scale-95 hover:bg-white/10"
               >
                 Add recipe
               </Link>
             ) : (
               <Link 
                 to="/register" 
-                className="group inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-800/50 px-8 py-4 font-semibold text-slate-100 backdrop-blur-md transition-all active:scale-95 hover:border-white/20 hover:bg-slate-700/50"
+                className="group inline-flex items-center gap-2 rounded-2xl glass p-4 px-8 font-semibold text-slate-100 transition-all duration-300 active:scale-95 hover:bg-white/10"
               >
                 Create free account
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />

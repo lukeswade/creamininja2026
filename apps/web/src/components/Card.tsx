@@ -5,7 +5,7 @@ export function Card({ className, children }: { className?: string; children: Re
   return (
     <div
       className={clsx(
-        "rounded-2xl border border-white/10 bg-slate-900/40 p-5 backdrop-blur-xl shadow-2xl shadow-black/50 overflow-hidden",
+        "rounded-3xl glass-panel p-5 overflow-hidden transition-all duration-300",
         className
       )}
     >
