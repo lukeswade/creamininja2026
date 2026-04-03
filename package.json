@@ -9,7 +9,8 @@
     "dev": "pnpm -r dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
-    "format": "pnpm -r format"
+    "format": "pnpm -r format",
+    "test": "pnpm -r test"
   },
   "devDependencies": {
     "globals": "^17.4.0",
