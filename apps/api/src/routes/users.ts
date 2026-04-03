@@ -171,28 +171,34 @@ router.get("/:handle", authOptional, async (c) => {
 router.patch("/me", authOptional, requireAuth, requireCsrf, zValidator("json", UpdateMeSchema), async (c) => {
   const me = c.get("user");
   const body = c.req.valid("json");
-  const fields: string[] = [];
-  const params: unknown[] = [];
+  const updates: { col: string; val: unknown }[] = [];
 
   if (body.displayName !== undefined) {
     const trimmed = body.displayName.trim();
     if (!trimmed) return c.json(badRequest("Display name cannot be empty"), 400);
-    fields.push("display_name = ?");
-    params.push(trimmed);
+    updates.push({ col: "display_name", val: trimmed });
   }
   if (body.avatarKey !== undefined) {
-    fields.push("avatar_key = ?");
-    params.push(body.avatarKey);
+    updates.push({ col: "avatar_key", val: body.avatarKey });
   }
   if (body.bannerKey !== undefined) {
-    fields.push("banner_key = ?");
-    params.push(body.bannerKey);
+    updates.push({ col: "banner_key", val: body.bannerKey });
   }
 
-  if (!fields.length) return c.json(badRequest("No profile fields to update"), 400);
+  if (updates.length === 0) return c.json(badRequest("No profile fields to update"), 400);
 
-  fields.push("updated_at = datetime('now')");
-  await run(c.env, `UPDATE users SET ${fields.join(", ")} WHERE id = ?`, [...params, me.id]);
+  const ALLOWED_COLUMNS = ["display_name", "avatar_key", "banner_key"];
+  const setClause = updates
+    .map((u) => {
+      if (!ALLOWED_COLUMNS.includes(u.col)) throw new Error("Invalid column");
+      return `${u.col} = ?`;
+    })
+    .join(", ");
+
+  await run(c.env, `UPDATE users SET ${setClause}, updated_at = datetime('now') WHERE id = ?`, [
+    ...updates.map((u) => u.val),
+    me.id
+  ]);
 
   const updated = await first<{
     id: string;
