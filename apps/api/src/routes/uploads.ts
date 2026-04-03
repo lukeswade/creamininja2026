@@ -35,8 +35,13 @@ router.post("/presign", zValidator("json", PresignSchema), async (c) => {
   const me = c.get("user");
   const { kind, contentType, bytes } = c.req.valid("json");
 
-  if (!/^image\/(jpeg|png|webp)$/.test(contentType)) return c.json(badRequest("Only jpeg/png/webp supported"), 400);
-  if (bytes > 2_500_000) return c.json(badRequest("Image too large (max ~2.5MB). Compress client-side."), 400);
+  if (!/^image\/(jpeg|png|webp)$/.test(contentType))
+    return c.json(badRequest("Only jpeg/png/webp supported"), 400);
+  if (bytes > 2_500_000)
+    return c.json(
+      badRequest("Image too large (max ~2.5MB). Compress client-side."),
+      400
+    );
 
   const ext = contentType.includes("jpeg") ? "jpg" : contentType.split("/")[1];
   const key = `${kind}/${me.id}/${newId("img")}.${ext}`;
@@ -53,7 +58,9 @@ router.post("/presign", zValidator("json", PresignSchema), async (c) => {
   // If you prefer not to use presigned URLs, you can implement multipart upload through the Worker instead.
   const endpoint = (c.env as any).R2_ENDPOINT as string | undefined;
   const accessKeyId = (c.env as any).R2_ACCESS_KEY_ID as string | undefined;
-  const secretAccessKey = (c.env as any).R2_SECRET_ACCESS_KEY as string | undefined;
+  const secretAccessKey = (c.env as any).R2_SECRET_ACCESS_KEY as
+    | string
+    | undefined;
 
   if (!endpoint || !accessKeyId || !secretAccessKey) {
     return c.json(
@@ -84,17 +91,34 @@ router.post("/presign", zValidator("json", PresignSchema), async (c) => {
     aws: { signQuery: true }
   });
 
-  return c.json(jsonOk({ ok: true, key, url: signed.url, headers: { "content-type": contentType } }));
+  return c.json(
+    jsonOk({
+      ok: true,
+      key,
+      url: signed.url,
+      headers: { "content-type": contentType }
+    })
+  );
 });
 
-const AvatarUpdateSchema = z.object({ avatarKey: z.string().min(1).max(500).nullable() });
-
-router.post("/set-avatar", zValidator("json", AvatarUpdateSchema), async (c) => {
-  const me = c.get("user");
-  const { avatarKey } = c.req.valid("json");
-  await run(c.env, "UPDATE users SET avatar_key = ?, updated_at=datetime('now') WHERE id = ?", [avatarKey, me.id]);
-  return c.json(jsonOk({ ok: true }));
+const AvatarUpdateSchema = z.object({
+  avatarKey: z.string().min(1).max(500).nullable()
 });
+
+router.post(
+  "/set-avatar",
+  zValidator("json", AvatarUpdateSchema),
+  async (c) => {
+    const me = c.get("user");
+    const { avatarKey } = c.req.valid("json");
+    await run(
+      c.env,
+      "UPDATE users SET avatar_key = ?, updated_at=datetime('now') WHERE id = ?",
+      [avatarKey, me.id]
+    );
+    return c.json(jsonOk({ ok: true }));
+  }
+);
 
 router.get("/file/:key{.+}", authOptional, async (c) => {
   const me = c.get("user");
@@ -113,7 +137,13 @@ router.get("/file/:key{.+}", authOptional, async (c) => {
     [key]
   );
   if (r) {
-    const can = await canViewRecipe(c.env, me?.id ?? null, r.id, r.author_id, r.visibility);
+    const can = await canViewRecipe(
+      c.env,
+      me?.id ?? null,
+      r.id,
+      r.author_id,
+      r.visibility
+    );
     if (!can) return c.json(forbidden(), 403);
     return await streamR2(c, key);
   }
@@ -138,15 +168,29 @@ async function streamR2(c: any, key: string) {
   return new Response(obj.body, { headers });
 }
 
-async function canViewRecipe(env: Env, viewerId: string | null, recipeId: string, authorId: string, visibility: string) {
+async function canViewRecipe(
+  env: Env,
+  viewerId: string | null,
+  recipeId: string,
+  authorId: string,
+  visibility: string
+) {
   if (viewerId && authorId === viewerId) return true;
   if (visibility === "public") return true;
   if (!viewerId) return false;
   if (visibility === "restricted") {
-    const f = await first<{ user_id: string }>(env, "SELECT user_id FROM friendships WHERE user_id = ? AND friend_id = ?", [viewerId, authorId]);
+    const f = await first<{ user_id: string }>(
+      env,
+      "SELECT user_id FROM friendships WHERE user_id = ? AND friend_id = ?",
+      [viewerId, authorId]
+    );
     return !!f;
   }
-  const share = await first<{ id: string }>(env, "SELECT id FROM recipe_shares WHERE recipe_id = ? AND shared_with_user_id = ?", [recipeId, viewerId]);
+  const share = await first<{ id: string }>(
+    env,
+    "SELECT id FROM recipe_shares WHERE recipe_id = ? AND shared_with_user_id = ?",
+    [recipeId, viewerId]
+  );
   return !!share;
 }
 

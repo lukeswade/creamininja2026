@@ -6,11 +6,21 @@ import { first } from "../db/sql";
 import { unauthorized } from "../util/http";
 
 export type AuthedVars = {
-  user: { id: string; email: string; displayName: string; handle: string; avatarKey: string | null; bannerKey: string | null };
+  user: {
+    id: string;
+    email: string;
+    displayName: string;
+    handle: string;
+    avatarKey: string | null;
+    bannerKey: string | null;
+  };
   session: { id: string; csrfToken: string };
 };
 
-export const authOptional = createMiddleware<{ Bindings: Env; Variables: Partial<AuthedVars> }>(async (c, next) => {
+export const authOptional = createMiddleware<{
+  Bindings: Env;
+  Variables: Partial<AuthedVars>;
+}>(async (c, next) => {
   const cookies = parseCookies(c.req.header("cookie") || null);
   const token = cookies["cn_session"];
   if (!token) return next();
@@ -51,18 +61,26 @@ export const authOptional = createMiddleware<{ Bindings: Env; Variables: Partial
   return next();
 });
 
-export const requireAuth = createMiddleware<{ Bindings: Env; Variables: AuthedVars }>(async (c, next) => {
+export const requireAuth = createMiddleware<{
+  Bindings: Env;
+  Variables: AuthedVars;
+}>(async (c, next) => {
   const user = c.get("user");
   if (!user) return c.json(unauthorized(), 401);
   return next();
 });
 
-export const requireCsrf = createMiddleware<{ Bindings: Env; Variables: AuthedVars }>(async (c, next) => {
+export const requireCsrf = createMiddleware<{
+  Bindings: Env;
+  Variables: AuthedVars;
+}>(async (c, next) => {
   const method = c.req.method.toUpperCase();
-  if (method === "GET" || method === "HEAD" || method === "OPTIONS") return next();
+  if (method === "GET" || method === "HEAD" || method === "OPTIONS")
+    return next();
 
   const sess = c.get("session");
   const header = c.req.header("x-csrf-token") || "";
-  if (!sess || !header || header !== sess.csrfToken) return c.json(unauthorized("Missing/invalid CSRF token"), 401);
+  if (!sess || !header || header !== sess.csrfToken)
+    return c.json(unauthorized("Missing/invalid CSRF token"), 401);
   return next();
 });

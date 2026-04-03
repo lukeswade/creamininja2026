@@ -49,7 +49,10 @@ export async function sha256Base64url(input: string): Promise<string> {
  *
  * Cloudflare Workers runtime supports PBKDF2 iteration counts up to 100,000.
  */
-export async function hashPassword(password: string, iter = 100_000): Promise<string> {
+export async function hashPassword(
+  password: string,
+  iter = 100_000
+): Promise<string> {
   // Clamp to Workers limit so we never generate an unusable hash
   const iterations = Math.min(Math.max(iter, 50_000), 100_000);
 
@@ -75,7 +78,10 @@ export async function hashPassword(password: string, iter = 100_000): Promise<st
   return `pbkdf2_sha256$${iterations}$${salt}$${hash}`;
 }
 
-export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+export async function verifyPassword(
+  password: string,
+  stored: string
+): Promise<boolean> {
   const parts = stored.split("$");
   if (parts.length !== 4) return false;
 
@@ -99,7 +105,12 @@ export async function verifyPassword(password: string, stored: string): Promise<
   );
 
   const derived = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", hash: "SHA-256", salt: saltBytes.buffer as ArrayBuffer, iterations: iter },
+    {
+      name: "PBKDF2",
+      hash: "SHA-256",
+      salt: saltBytes.buffer as ArrayBuffer,
+      iterations: iter
+    },
     key,
     256
   );

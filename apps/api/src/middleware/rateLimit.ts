@@ -7,7 +7,11 @@ import type { Env } from "../env";
  */
 const buckets = new Map<string, { resetAt: number; count: number }>();
 
-export const rateLimit = (keyFn: (c: any) => string, limit: number, windowMs: number) =>
+export const rateLimit = (
+  keyFn: (c: any) => string,
+  limit: number,
+  windowMs: number
+) =>
   createMiddleware<{ Bindings: Env }>(async (c, next) => {
     const key = keyFn(c);
     const now = Date.now();
@@ -17,7 +21,10 @@ export const rateLimit = (keyFn: (c: any) => string, limit: number, windowMs: nu
       return next();
     }
     if (cur.count >= limit) {
-      return c.json({ ok: false, error: { message: "Rate limit exceeded" } }, 429);
+      return c.json(
+        { ok: false, error: { message: "Rate limit exceeded" } },
+        429
+      );
     }
     cur.count += 1;
     return next();

@@ -28,7 +28,10 @@ function extractJsonBlock(s: string) {
   return s.slice(start, end + 1);
 }
 
-async function runGeminiRequest<T>(args: GeminiGenerateArgs, model: string): Promise<T> {
+async function runGeminiRequest<T>(
+  args: GeminiGenerateArgs,
+  model: string
+): Promise<T> {
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/` +
     `${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(args.apiKey)}`;
@@ -39,8 +42,8 @@ async function runGeminiRequest<T>(args: GeminiGenerateArgs, model: string): Pro
     parts.unshift({
       inline_data: {
         mime_type: args.image.mimeType,
-        data: args.image.base64,
-      },
+        data: args.image.base64
+      }
     });
   }
 
@@ -51,7 +54,7 @@ async function runGeminiRequest<T>(args: GeminiGenerateArgs, model: string): Pro
       topP: args.topP ?? 0.9,
       maxOutputTokens: args.maxOutputTokens ?? 700,
       responseMimeType: "application/json"
-    },
+    }
   };
 
   if (args.system?.trim()) {
@@ -61,7 +64,7 @@ async function runGeminiRequest<T>(args: GeminiGenerateArgs, model: string): Pro
   const resp = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify(body)
   });
 
   const data = await resp.json<any>();
@@ -101,11 +104,18 @@ function shouldFallback(err: Error) {
   );
 }
 
-export async function geminiGenerateJSON<T>(args: GeminiGenerateArgs): Promise<T> {
+export async function geminiGenerateJSON<T>(
+  args: GeminiGenerateArgs
+): Promise<T> {
   if (!args.apiKey || args.apiKey === "undefined") {
-    throw new Error("GEMINI_API_KEY is missing. Check your .dev.vars or Cloudflare secrets.");
+    throw new Error(
+      "GEMINI_API_KEY is missing. Check your .dev.vars or Cloudflare secrets."
+    );
   }
-  const models = [args.model ?? "gemini-3.1-flash-lite", ...(args.fallbacks ?? [])];
+  const models = [
+    args.model ?? "gemini-3.1-flash-lite",
+    ...(args.fallbacks ?? [])
+  ];
   let lastErr: Error | null = null;
 
   for (let i = 0; i < models.length; i++) {
@@ -115,7 +125,11 @@ export async function geminiGenerateJSON<T>(args: GeminiGenerateArgs): Promise<T
     } catch (err: any) {
       lastErr = err instanceof Error ? err : new Error(String(err));
       if (i === models.length - 1 || !shouldFallback(lastErr)) break;
-      console.warn("gemini_model_fallback", { from: model, to: models[i + 1], reason: lastErr.message });
+      console.warn("gemini_model_fallback", {
+        from: model,
+        to: models[i + 1],
+        reason: lastErr.message
+      });
       continue;
     }
   }

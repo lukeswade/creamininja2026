@@ -29,7 +29,11 @@ const router = new Hono<{ Bindings: Env; Variables: HonoVars }>();
  * - restricted: friends of author
  * - private: only author, or explicitly shared via recipe_shares
  */
-async function canView(env: Env, viewerId: string | null, recipeId: string): Promise<boolean> {
+async function canView(
+  env: Env,
+  viewerId: string | null,
+  recipeId: string
+): Promise<boolean> {
   const recipe = await first<{ author_id: string; visibility: string }>(
     env,
     "SELECT author_id, visibility FROM recipes WHERE id = ?",
@@ -108,19 +112,36 @@ function recipeSelect(viewerId: string | null): { sql: string; params: any[] } {
   };
 }
 
-async function generateRecipeImage(env: Env, recipeId: string, title: string, category: string) {
-  if (!env.AI) return { updated: false, reason: "AI binding unavailable" as const };
+async function generateRecipeImage(
+  env: Env,
+  recipeId: string,
+  title: string,
+  category: string
+) {
+  if (!env.AI)
+    return { updated: false, reason: "AI binding unavailable" as const };
 
   const prompt = `Professional food photography, a single delicious pint of ${title} ${category} dessert, creamy texture, resting on a modern kitchen counter next to ingredients, soft daylight lighting, high resolution, extreme detail, photorealistic.`;
-  const response = await env.AI.run("@cf/stabilityai/stable-diffusion-xl-base-1.0", { prompt });
-  if (!response) return { updated: false, reason: "AI returned no image" as const };
+  const response = await env.AI.run(
+    "@cf/stabilityai/stable-diffusion-xl-base-1.0",
+    { prompt }
+  );
+  if (!response)
+    return { updated: false, reason: "AI returned no image" as const };
 
   const buffer = await new Response(response).arrayBuffer();
-  if (buffer.byteLength <= 100) return { updated: false, reason: "Generated image was empty" as const };
+  if (buffer.byteLength <= 100)
+    return { updated: false, reason: "Generated image was empty" as const };
 
   const key = `recipe/auto-${newId("img")}.png`;
-  await env.UPLOADS.put(key, buffer, { httpMetadata: { contentType: "image/png" } });
-  await run(env, "UPDATE recipes SET image_key = ?, updated_at = datetime('now') WHERE id = ?", [key, recipeId]);
+  await env.UPLOADS.put(key, buffer, {
+    httpMetadata: { contentType: "image/png" }
+  });
+  await run(
+    env,
+    "UPDATE recipes SET image_key = ?, updated_at = datetime('now') WHERE id = ?",
+    [key, recipeId]
+  );
   return { updated: true, key };
 }
 
@@ -132,7 +153,10 @@ router.get("/:id", authOptional, async (c) => {
   if (!ok) return c.json(forbidden(), 403);
 
   const base = recipeSelect(viewer);
-  const row = await first<any>(c.env, `${base.sql} WHERE r.id = ?`, [...base.params, id]);
+  const row = await first<any>(c.env, `${base.sql} WHERE r.id = ?`, [
+    ...base.params,
+    id
+  ]);
   if (!row) return c.json(notFound(), 404);
 
   return c.json(jsonOk({ ok: true, recipe: normalize(row) }));
@@ -188,7 +212,11 @@ const RecipeCreateSchema = z.object({
   description: z.string().max(1000).optional().nullable(),
   category: z.string().min(1).max(40),
   visibility: z.enum(["private", "restricted", "public"]),
-  ingredients: z.array(z.string().min(1).max(160)).max(80).optional().default([]),
+  ingredients: z
+    .array(z.string().min(1).max(160))
+    .max(80)
+    .optional()
+    .default([]),
   steps: z.array(z.string().min(1).max(400)).max(40).optional().default([]),
   imageKey: z.string().max(500).optional().nullable()
 });
@@ -205,9 +233,16 @@ router.post("/", zValidator("json", RecipeCreateSchema), async (c) => {
     c.executionCtx.waitUntil(
       (async () => {
         try {
-          const result = await generateRecipeImage(c.env, id, body.title, body.category);
+          const result = await generateRecipeImage(
+            c.env,
+            id,
+            body.title,
+            body.category
+          );
           if (result.updated) {
-            console.info(`Background AI Image Generated: ${result.key} for recipe ${id}`);
+            console.info(
+              `Background AI Image Generated: ${result.key} for recipe ${id}`
+            );
           }
         } catch (err) {
           console.error("BACKGROUND ERR: Failed to auto-generate image:", err);
@@ -236,70 +271,90 @@ router.post("/", zValidator("json", RecipeCreateSchema), async (c) => {
   );
 
   const base = recipeSelect(me.id);
-  const row = await first<any>(c.env, `${base.sql} WHERE r.id = ?`, [...base.params, id]);
+  const row = await first<any>(c.env, `${base.sql} WHERE r.id = ?`, [
+    ...base.params,
+    id
+  ]);
   return c.json(jsonOk({ ok: true, recipe: normalize(row) }));
 });
 
-const RecipeUpdateSchema = RecipeCreateSchema.partial().extend({ id: z.string().optional() });
+const RecipeUpdateSchema = RecipeCreateSchema.partial().extend({
+  id: z.string().optional()
+});
 
 router.patch("/:id", zValidator("json", RecipeUpdateSchema), async (c) => {
   const me = c.get("user")!;
   const id = c.req.param("id");
 
-  const current = await first<{ author_id: string }>(c.env, "SELECT author_id FROM recipes WHERE id = ?", [id]);
+  const current = await first<{
+    author_id: string;
+    title: string;
+    description: string | null;
+    category: string;
+    visibility: string;
+    ingredients_json: string;
+    steps_json: string;
+    image_key: string | null;
+  }>(
+    c.env,
+    "SELECT author_id, title, description, category, visibility, ingredients_json, steps_json, image_key FROM recipes WHERE id = ?",
+    [id]
+  );
   if (!current) return c.json(notFound(), 404);
   if (current.author_id !== me.id) return c.json(forbidden(), 403);
 
   const body = c.req.valid("json");
-  const updates: { col: string; val: unknown }[] = [];
 
-  if (body.title !== undefined) {
-    updates.push({ col: "title", val: body.title });
-  }
-  if (body.description !== undefined) {
-    updates.push({ col: "description", val: body.description });
-  }
-  if (body.category !== undefined) {
-    updates.push({ col: "category", val: body.category });
-  }
-  if (body.visibility !== undefined) {
-    updates.push({ col: "visibility", val: body.visibility });
-  }
-  if (body.ingredients !== undefined) {
-    updates.push({ col: "ingredients_json", val: JSON.stringify(body.ingredients) });
-  }
-  if (body.steps !== undefined) {
-    updates.push({ col: "steps_json", val: JSON.stringify(body.steps) });
-  }
-  if (body.imageKey !== undefined) {
-    updates.push({ col: "image_key", val: body.imageKey });
-  }
+  // Check if there's anything to update by checking if any key in the body is not undefined
+  const hasUpdates = Object.values(body).some((v) => v !== undefined);
+  if (!hasUpdates) return c.json(badRequest("No fields to update"), 400);
 
-  if (updates.length === 0) return c.json(badRequest("No fields to update"), 400);
+  const newTitle = body.title !== undefined ? body.title : current.title;
+  const newDescription =
+    body.description !== undefined ? body.description : current.description;
+  const newCategory =
+    body.category !== undefined ? body.category : current.category;
+  const newVisibility =
+    body.visibility !== undefined ? body.visibility : current.visibility;
+  const newIngredients =
+    body.ingredients !== undefined
+      ? JSON.stringify(body.ingredients)
+      : current.ingredients_json;
+  const newSteps =
+    body.steps !== undefined ? JSON.stringify(body.steps) : current.steps_json;
+  const newImageKey =
+    body.imageKey !== undefined ? body.imageKey : current.image_key;
 
-  const ALLOWED_COLUMNS = [
-    "title",
-    "description",
-    "category",
-    "visibility",
-    "ingredients_json",
-    "steps_json",
-    "image_key"
-  ];
-  const setClause = updates
-    .map((u) => {
-      if (!ALLOWED_COLUMNS.includes(u.col)) throw new Error("Invalid column");
-      return `${u.col} = ?`;
-    })
-    .join(", ");
-
-  await run(c.env, `UPDATE recipes SET ${setClause}, updated_at = datetime('now') WHERE id = ?`, [
-    ...updates.map((u) => u.val),
-    id
-  ]);
+  await run(
+    c.env,
+    `UPDATE recipes
+     SET
+       title = ?,
+       description = ?,
+       category = ?,
+       visibility = ?,
+       ingredients_json = ?,
+       steps_json = ?,
+       image_key = ?,
+       updated_at = datetime('now')
+     WHERE id = ?`,
+    [
+      newTitle,
+      newDescription,
+      newCategory,
+      newVisibility,
+      newIngredients,
+      newSteps,
+      newImageKey,
+      id
+    ]
+  );
 
   const base = recipeSelect(me.id);
-  const row = await first<any>(c.env, `${base.sql} WHERE r.id = ?`, [...base.params, id]);
+  const row = await first<any>(c.env, `${base.sql} WHERE r.id = ?`, [
+    ...base.params,
+    id
+  ]);
   return c.json(jsonOk({ ok: true, recipe: normalize(row) }));
 });
 
@@ -307,7 +362,11 @@ router.delete("/:id", async (c) => {
   const me = c.get("user")!;
   const id = c.req.param("id");
 
-  const current = await first<{ author_id: string }>(c.env, "SELECT author_id FROM recipes WHERE id = ?", [id]);
+  const current = await first<{ author_id: string }>(
+    c.env,
+    "SELECT author_id FROM recipes WHERE id = ?",
+    [id]
+  );
   if (!current) return c.json(notFound(), 404);
   if (current.author_id !== me.id) return c.json(forbidden(), 403);
 
@@ -328,7 +387,8 @@ router.post("/:id/share", zValidator("json", ShareSchema), async (c) => {
     [id]
   );
   if (!recipe) return c.json(notFound(), 404);
-  if (recipe.author_id !== me.id) return c.json(forbidden("Only author can share"), 403);
+  if (recipe.author_id !== me.id)
+    return c.json(forbidden("Only author can share"), 403);
 
   const shareId = newId("shr");
   await run(
@@ -349,12 +409,18 @@ router.post("/:id/star", zValidator("json", StarSchema), async (c) => {
   if (!ok) return c.json(forbidden(), 403);
 
   // insert star then increment counter if actually inserted
-  const res = await c.env.DB.prepare("INSERT OR IGNORE INTO stars (user_id, recipe_id) VALUES (?, ?)")
+  const res = await c.env.DB.prepare(
+    "INSERT OR IGNORE INTO stars (user_id, recipe_id) VALUES (?, ?)"
+  )
     .bind(me.id, id)
     .run();
 
   if (res.meta.changes && res.meta.changes > 0) {
-    await run(c.env, "UPDATE recipes SET stars_count = stars_count + 1 WHERE id = ?", [id]);
+    await run(
+      c.env,
+      "UPDATE recipes SET stars_count = stars_count + 1 WHERE id = ?",
+      [id]
+    );
   }
 
   return c.json(jsonOk({ ok: true }));
@@ -364,7 +430,9 @@ router.delete("/:id/star", async (c) => {
   const me = c.get("user")!;
   const id = c.req.param("id");
 
-  const del = await c.env.DB.prepare("DELETE FROM stars WHERE user_id = ? AND recipe_id = ?")
+  const del = await c.env.DB.prepare(
+    "DELETE FROM stars WHERE user_id = ? AND recipe_id = ?"
+  )
     .bind(me.id, id)
     .run();
 

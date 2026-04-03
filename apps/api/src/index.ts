@@ -12,11 +12,14 @@ import { secureHeaders } from "hono/secure-headers";
 
 const app = new Hono<{ Bindings: Env }>();
 
-app.use("*", secureHeaders({
-  crossOriginEmbedderPolicy: false,
-  crossOriginOpenerPolicy: false,
-  crossOriginResourcePolicy: false
-}));
+app.use(
+  "*",
+  secureHeaders({
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: false
+  })
+);
 
 app.use(
   "*",

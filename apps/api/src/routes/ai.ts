@@ -35,7 +35,10 @@ const RecipeSchema = z.object({
 });
 
 function clampString(value: unknown, max: number) {
-  return String(value ?? "").trim().replace(/\s+/g, " ").slice(0, max);
+  return String(value ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .slice(0, max);
 }
 
 function coerceStringList(value: unknown, maxItems: number, maxChars: number) {
@@ -57,11 +60,22 @@ function coerceStringList(value: unknown, maxItems: number, maxChars: number) {
   return [];
 }
 
-function normalizeAiRecipe(raw: any, validCategories: string[], fallbackCategory?: string) {
+function normalizeAiRecipe(
+  raw: any,
+  validCategories: string[],
+  fallbackCategory?: string
+) {
   const title = clampString(raw?.title || raw?.name || raw?.recipeName, 60);
-  const description = clampString(raw?.description || raw?.summary || raw?.blurb, 160);
+  const description = clampString(
+    raw?.description || raw?.summary || raw?.blurb,
+    160
+  );
   const ingredients = coerceStringList(raw?.ingredients, 8, 120);
-  const steps = coerceStringList(raw?.steps || raw?.instructions || raw?.method, 6, 280);
+  const steps = coerceStringList(
+    raw?.steps || raw?.instructions || raw?.method,
+    6,
+    280
+  );
   const notes = coerceStringList(raw?.notes, 3, 160);
   const allergens = coerceStringList(raw?.allergens, 4, 40);
   const rawCategory = clampString(raw?.category, 40);
@@ -82,7 +96,10 @@ function normalizeAiRecipe(raw: any, validCategories: string[], fallbackCategory
   };
 }
 
-function buildRecipeSystem(validCategories: string[], deluxeInstruction: string) {
+function buildRecipeSystem(
+  validCategories: string[],
+  deluxeInstruction: string
+) {
   return [
     "You are a Ninja CREAMi recipe generator.",
     "Write concise, practical, realistic recipes.",
@@ -104,42 +121,63 @@ const GenFromIngredients = z.object({
   isDeluxe: z.boolean().optional().default(false)
 });
 
-router.post("/from-ingredients", zValidator("json", GenFromIngredients), async (c) => {
-  const body = c.req.valid("json");
+router.post(
+  "/from-ingredients",
+  zValidator("json", GenFromIngredients),
+  async (c) => {
+    const body = c.req.valid("json");
 
-  const deluxeInstruction = body.isDeluxe
-    ? "The user is using a Ninja CREAMi Deluxe (24oz pint). You MUST scale all ingredients and macros for a massive 24oz yield, and you may utilize Deluxe-exclusive processing modes (like FRAPPE, FROZEN DRINK, SLUSHI, ITALIAN ICE, or CREAMICCINO)."
-    : "The user is using a standard Ninja CREAMi (16oz pint). Keep ingredient measurements safely below the 16oz max fill line.";
+    const deluxeInstruction = body.isDeluxe
+      ? "The user is using a Ninja CREAMi Deluxe (24oz pint). You MUST scale all ingredients and macros for a massive 24oz yield, and you may utilize Deluxe-exclusive processing modes (like FRAPPE, FROZEN DRINK, SLUSHI, ITALIAN ICE, or CREAMICCINO)."
+      : "The user is using a standard Ninja CREAMi (16oz pint). Keep ingredient measurements safely below the 16oz max fill line.";
 
-  const validCategories = [...CORE_CATEGORIES, ...LIFESTYLE_CATEGORIES, ...(body.isDeluxe ? DELUXE_ONLY_CATEGORIES : [])];
+    const validCategories = [
+      ...CORE_CATEGORIES,
+      ...LIFESTYLE_CATEGORIES,
+      ...(body.isDeluxe ? DELUXE_ONLY_CATEGORIES : [])
+    ];
 
-  const system = buildRecipeSystem(validCategories, deluxeInstruction);
+    const system = buildRecipeSystem(validCategories, deluxeInstruction);
 
-  const userPrompt = `Create a ${body.category} CREAMi recipe using these ingredients: ${body.ingredients.join(", ")}.
+    const userPrompt = `Create a ${body.category} CREAMi recipe using these ingredients: ${body.ingredients.join(", ")}.
 Dietary restrictions: ${(body.dietary ?? []).join(", ") || "none"}.
 Creativity level: ${body.creativity}.`;
 
-  try {
-    const recipe = await geminiGenerateJSON<any>({
-      apiKey: c.env.GEMINI_API_KEY,
-      model: "gemini-3.1-flash-lite",
-      fallbacks: ["gemini-2.5-flash-lite", "gemini-3-flash-preview"],
-      system,
-      user: userPrompt,
-      maxOutputTokens: 650,
-      temperature: body.creativity === "wild" ? 0.8 : body.creativity === "safe" ? 0.35 : 0.55
-    });
+    try {
+      const recipe = await geminiGenerateJSON<any>({
+        apiKey: c.env.GEMINI_API_KEY,
+        model: "gemini-3.1-flash-lite",
+        fallbacks: ["gemini-2.5-flash-lite", "gemini-3-flash-preview"],
+        system,
+        user: userPrompt,
+        maxOutputTokens: 650,
+        temperature:
+          body.creativity === "wild"
+            ? 0.8
+            : body.creativity === "safe"
+              ? 0.35
+              : 0.55
+      });
 
-    const parsed = RecipeSchema.safeParse(normalizeAiRecipe(recipe, validCategories, body.category));
-    if (!parsed.success) {
-      return c.json(badRequest("Model output did not match schema", parsed.error.flatten()), 400);
+      const parsed = RecipeSchema.safeParse(
+        normalizeAiRecipe(recipe, validCategories, body.category)
+      );
+      if (!parsed.success) {
+        return c.json(
+          badRequest(
+            "Model output did not match schema",
+            parsed.error.flatten()
+          ),
+          400
+        );
+      }
+
+      return c.json(jsonOk({ ok: true, recipe: parsed.data }));
+    } catch (err: any) {
+      return c.json(badRequest(err.message || "AI generation failed"), 400);
     }
-
-    return c.json(jsonOk({ ok: true, recipe: parsed.data }));
-  } catch (err: any) {
-    return c.json(badRequest(err.message || "AI generation failed"), 400);
   }
-});
+);
 
 const GenFromImage = z.object({
   imageKey: z.string().min(1).max(500),
@@ -155,7 +193,11 @@ router.post("/from-image", zValidator("json", GenFromImage), async (c) => {
 
   const contentType = obj.httpMetadata?.contentType || "image/jpeg";
   const bytes = await obj.arrayBuffer();
-  if (bytes.byteLength > 2_500_000) return c.json(badRequest("Image too large (max ~2.5MB). Compress client-side."), 400);
+  if (bytes.byteLength > 2_500_000)
+    return c.json(
+      badRequest("Image too large (max ~2.5MB). Compress client-side."),
+      400
+    );
 
   const b64 = arrayBufferToBase64(bytes);
 
@@ -163,7 +205,11 @@ router.post("/from-image", zValidator("json", GenFromImage), async (c) => {
     ? "The user is using a Ninja CREAMi Deluxe (24oz pint). Scale ingredients for a 24oz yield. You can use Deluxe-exclusive processing modes like FRAPPE, FROZEN DRINK, SLUSHI, ITALIAN ICE, or CREAMICCINO."
     : "The user is using a standard Ninja CREAMi (16oz pint). Keep ingredients scaled for a 16oz max fill line.";
 
-  const validCategories = [...CORE_CATEGORIES, ...LIFESTYLE_CATEGORIES, ...(isDeluxe ? DELUXE_ONLY_CATEGORIES : [])];
+  const validCategories = [
+    ...CORE_CATEGORIES,
+    ...LIFESTYLE_CATEGORIES,
+    ...(isDeluxe ? DELUXE_ONLY_CATEGORIES : [])
+  ];
 
   const system = `${buildRecipeSystem(validCategories, deluxeInstruction)} First identify the likely ingredients visible in the image, then build the recipe from those ingredients.`;
 
@@ -181,8 +227,14 @@ router.post("/from-image", zValidator("json", GenFromImage), async (c) => {
       temperature: 0.45
     });
 
-    const parsed = RecipeSchema.safeParse(normalizeAiRecipe(recipe, validCategories, category));
-    if (!parsed.success) return c.json(badRequest("Model output did not match schema", parsed.error.flatten()), 400);
+    const parsed = RecipeSchema.safeParse(
+      normalizeAiRecipe(recipe, validCategories, category)
+    );
+    if (!parsed.success)
+      return c.json(
+        badRequest("Model output did not match schema", parsed.error.flatten()),
+        400
+      );
 
     return c.json(jsonOk({ ok: true, recipe: parsed.data }));
   } catch (err: any) {
@@ -193,7 +245,8 @@ router.post("/from-image", zValidator("json", GenFromImage), async (c) => {
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   let binary = "";
   const bytes = new Uint8Array(buffer);
-  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  for (let i = 0; i < bytes.byteLength; i++)
+    binary += String.fromCharCode(bytes[i]);
   return btoa(binary);
 }
 
@@ -202,43 +255,84 @@ const GenFromDescription = z.object({
   isDeluxe: z.boolean().optional().default(false)
 });
 
-router.post("/from-description", zValidator("json", GenFromDescription), async (c) => {
-  const { description, isDeluxe } = c.req.valid("json");
+router.post(
+  "/from-description",
+  zValidator("json", GenFromDescription),
+  async (c) => {
+    const { description, isDeluxe } = c.req.valid("json");
 
-  const deluxeInstruction = isDeluxe
-    ? "The user is using a Ninja CREAMi Deluxe (24oz pint). Scale ingredients for a 24oz yield. You can use Deluxe-exclusive processing modes like FRAPPE, FROZEN DRINK, SLUSHI, ITALIAN ICE, or CREAMICCINO."
-    : "The user is using a standard Ninja CREAMi (16oz pint). Keep ingredients scaled for a 16oz max capacity.";
+    const deluxeInstruction = isDeluxe
+      ? "The user is using a Ninja CREAMi Deluxe (24oz pint). Scale ingredients for a 24oz yield. You can use Deluxe-exclusive processing modes like FRAPPE, FROZEN DRINK, SLUSHI, ITALIAN ICE, or CREAMICCINO."
+      : "The user is using a standard Ninja CREAMi (16oz pint). Keep ingredients scaled for a 16oz max capacity.";
 
-  const validCategories = [...CORE_CATEGORIES, ...LIFESTYLE_CATEGORIES, ...(isDeluxe ? DELUXE_ONLY_CATEGORIES : [])];
+    const validCategories = [
+      ...CORE_CATEGORIES,
+      ...LIFESTYLE_CATEGORIES,
+      ...(isDeluxe ? DELUXE_ONLY_CATEGORIES : [])
+    ];
 
-  const system = `${buildRecipeSystem(validCategories, deluxeInstruction)} Infer the best category from the user's craving if it is not explicit.`;
+    const system = `${buildRecipeSystem(validCategories, deluxeInstruction)} Infer the best category from the user's craving if it is not explicit.`;
 
-  const userPrompt = `Create an incredible CREAMi recipe based on this exact description or craving: "${description}".`;
+    const userPrompt = `Create an incredible CREAMi recipe based on this exact description or craving: "${description}".`;
 
-  try {
-    const recipe = await geminiGenerateJSON<any>({
-      apiKey: c.env.GEMINI_API_KEY,
-      model: "gemini-3.1-flash-lite",
-      fallbacks: ["gemini-2.5-flash-lite", "gemini-3-flash-preview"],
-      system,
-      user: userPrompt,
-      maxOutputTokens: 650,
-      temperature: 0.55
-    });
+    try {
+      const recipe = await geminiGenerateJSON<any>({
+        apiKey: c.env.GEMINI_API_KEY,
+        model: "gemini-3.1-flash-lite",
+        fallbacks: ["gemini-2.5-flash-lite", "gemini-3-flash-preview"],
+        system,
+        user: userPrompt,
+        maxOutputTokens: 650,
+        temperature: 0.55
+      });
 
-    const parsed = RecipeSchema.safeParse(normalizeAiRecipe(recipe, validCategories));
-    if (!parsed.success) return c.json(badRequest("Model output did not match schema", parsed.error.flatten()), 400);
+      const parsed = RecipeSchema.safeParse(
+        normalizeAiRecipe(recipe, validCategories)
+      );
+      if (!parsed.success)
+        return c.json(
+          badRequest(
+            "Model output did not match schema",
+            parsed.error.flatten()
+          ),
+          400
+        );
 
-    return c.json(jsonOk({ ok: true, recipe: parsed.data }));
-  } catch (err: any) {
-    return c.json(badRequest(err.message || "AI generation failed"), 400);
+      return c.json(jsonOk({ ok: true, recipe: parsed.data }));
+    } catch (err: any) {
+      return c.json(badRequest(err.message || "AI generation failed"), 400);
+    }
   }
-});
+);
 
 // Categories that exactly match the UI dropdown <option> values
-const CORE_CATEGORIES = ["Ice Cream", "Lite Ice Cream", "Protein Ice Cream", "Gelato", "Sorbet", "Smoothie Bowl", "Milkshake", "Slushie", "Frozen Yogurt"];
-const DELUXE_ONLY_CATEGORIES = ["Frappe", "Frozen Drink", "Italian Ice", "Creamiccino"];
-const LIFESTYLE_CATEGORIES = ["Diet/Keto", "Dairy-Free", "Vegan", "Adult", "Creamy", "Decadent", "Refreshing", "Other"];
+const CORE_CATEGORIES = [
+  "Ice Cream",
+  "Lite Ice Cream",
+  "Protein Ice Cream",
+  "Gelato",
+  "Sorbet",
+  "Smoothie Bowl",
+  "Milkshake",
+  "Slushie",
+  "Frozen Yogurt"
+];
+const DELUXE_ONLY_CATEGORIES = [
+  "Frappe",
+  "Frozen Drink",
+  "Italian Ice",
+  "Creamiccino"
+];
+const LIFESTYLE_CATEGORIES = [
+  "Diet/Keto",
+  "Dairy-Free",
+  "Vegan",
+  "Adult",
+  "Creamy",
+  "Decadent",
+  "Refreshing",
+  "Other"
+];
 const SURPRISE_THEMES = [
   "high-protein peanut butter cup hack",
   "electrolyte frozen recovery slush",
@@ -264,10 +358,15 @@ const SurpriseSchema = z.object({
 
 router.post("/surprise", zValidator("json", SurpriseSchema), async (c) => {
   const { isDeluxe } = c.req.valid("json");
-  
-  const validPool = [...CORE_CATEGORIES, ...LIFESTYLE_CATEGORIES, ...(isDeluxe ? DELUXE_ONLY_CATEGORIES : [])];
+
+  const validPool = [
+    ...CORE_CATEGORIES,
+    ...LIFESTYLE_CATEGORIES,
+    ...(isDeluxe ? DELUXE_ONLY_CATEGORIES : [])
+  ];
   const category = validPool[Math.floor(Math.random() * validPool.length)];
-  const theme = SURPRISE_THEMES[Math.floor(Math.random() * SURPRISE_THEMES.length)];
+  const theme =
+    SURPRISE_THEMES[Math.floor(Math.random() * SURPRISE_THEMES.length)];
 
   const deluxeInstruction = isDeluxe
     ? "The user is using a Ninja CREAMi Deluxe (24oz pint). Scale ingredients for a 24oz yield. You can use Deluxe-exclusive processing modes like FRAPPE, FROZEN DRINK, SLUSHI, ITALIAN ICE, or CREAMICCINO."
@@ -288,9 +387,14 @@ router.post("/surprise", zValidator("json", SurpriseSchema), async (c) => {
       temperature: 0.75
     });
 
-    const parsed = RecipeSchema.safeParse(normalizeAiRecipe(recipe, validPool, category));
+    const parsed = RecipeSchema.safeParse(
+      normalizeAiRecipe(recipe, validPool, category)
+    );
     if (!parsed.success) {
-      return c.json(badRequest("Model output did not match schema", parsed.error.flatten()), 400);
+      return c.json(
+        badRequest("Model output did not match schema", parsed.error.flatten()),
+        400
+      );
     }
 
     return c.json(jsonOk({ ok: true, recipe: parsed.data }));
