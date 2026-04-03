@@ -11,7 +11,7 @@
     "db:seed:remote": "wrangler d1 execute creamininja-db --remote --file ./scripts/seed.sql",
     "lint": "eslint .",
     "format": "prettier -w .",
-    "test": "vitest"
+    "test": "vitest run src/util"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.4.1",

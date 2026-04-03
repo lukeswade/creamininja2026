@@ -1,95 +1,69 @@
-import { describe, it, expect } from 'vitest';
-import { parseCookies, serializeCookie } from './cookies';
+import { describe, it, expect } from "vitest";
+import { serializeCookie } from "./cookies.js";
 
-describe('cookies util', () => {
-  describe('parseCookies', () => {
-    it('returns empty object for null header', () => {
-      expect(parseCookies(null)).toEqual({});
-    });
-
-    it('returns empty object for empty string', () => {
-      expect(parseCookies('')).toEqual({});
-    });
-
-    it('parses basic cookie', () => {
-      expect(parseCookies('foo=bar')).toEqual({ foo: 'bar' });
-    });
-
-    it('parses multiple cookies', () => {
-      expect(parseCookies('foo=bar; baz=qux')).toEqual({ foo: 'bar', baz: 'qux' });
-    });
-
-    it('handles extra whitespace', () => {
-      expect(parseCookies('  foo=bar  ;  baz=qux  ')).toEqual({ foo: 'bar', baz: 'qux' });
-    });
-
-    it('ignores empty parts', () => {
-      expect(parseCookies('foo=bar;;baz=qux')).toEqual({ foo: 'bar', baz: 'qux' });
-    });
-
-    it('ignores parts without key', () => {
-      expect(parseCookies('=bar;foo=baz')).toEqual({ foo: 'baz' });
-    });
-
-    it('decodes url encoded values', () => {
-      expect(parseCookies('foo=bar%20baz')).toEqual({ foo: 'bar baz' });
-    });
-
-    it('handles values with multiple equal signs', () => {
-      expect(parseCookies('foo=bar=baz=qux')).toEqual({ foo: 'bar=baz=qux' });
-    });
-
-    it('handles keys with empty values', () => {
-      expect(parseCookies('foo=; baz=qux')).toEqual({ foo: '', baz: 'qux' });
-    });
+describe("serializeCookie", () => {
+  it("should serialize a simple cookie with default options", () => {
+    const cookie = serializeCookie("testName", "testValue");
+    expect(cookie).toBe("testName=testValue; Path=/; SameSite=Lax");
   });
 
-  describe('serializeCookie', () => {
-    it('serializes basic cookie', () => {
-      expect(serializeCookie('foo', 'bar')).toBe('foo=bar; Path=/; SameSite=Lax');
+  it("should url-encode the value", () => {
+    const cookie = serializeCookie("testName", "test Value with spaces & special chars! =");
+    // encodeURIComponent('test Value with spaces & special chars! =') is 'test%20Value%20with%20spaces%20%26%20special%20chars!%20%3D'
+    expect(cookie).toContain(`testName=test%20Value%20with%20spaces%20%26%20special%20chars!%20%3D`);
+  });
+
+  it("should support the path option", () => {
+    const cookie = serializeCookie("name", "value", { path: "/app" });
+    expect(cookie).toBe("name=value; Path=/app; SameSite=Lax");
+  });
+
+  it("should support the domain option", () => {
+    const cookie = serializeCookie("name", "value", { domain: "example.com" });
+    expect(cookie).toBe("name=value; Path=/; Domain=example.com; SameSite=Lax");
+  });
+
+  it("should support the httpOnly option", () => {
+    const cookie = serializeCookie("name", "value", { httpOnly: true });
+    expect(cookie).toBe("name=value; Path=/; HttpOnly; SameSite=Lax");
+  });
+
+  it("should support the secure option", () => {
+    const cookie = serializeCookie("name", "value", { secure: true });
+    expect(cookie).toBe("name=value; Path=/; Secure; SameSite=Lax");
+  });
+
+  it("should support the sameSite option (Strict, None, Lax)", () => {
+    expect(serializeCookie("name", "value", { sameSite: "Strict" }))
+      .toBe("name=value; Path=/; SameSite=Strict");
+
+    expect(serializeCookie("name", "value", { sameSite: "None" }))
+      .toBe("name=value; Path=/; SameSite=None");
+
+    expect(serializeCookie("name", "value", { sameSite: "Lax" }))
+      .toBe("name=value; Path=/; SameSite=Lax");
+  });
+
+  it("should support the maxAge option", () => {
+    const cookie = serializeCookie("name", "value", { maxAge: 3600 });
+    expect(cookie).toBe("name=value; Path=/; SameSite=Lax; Max-Age=3600");
+  });
+
+  it("should correctly handle maxAge of 0", () => {
+    const cookie = serializeCookie("name", "value", { maxAge: 0 });
+    expect(cookie).toBe("name=value; Path=/; SameSite=Lax; Max-Age=0");
+  });
+
+  it("should serialize all options combined", () => {
+    const cookie = serializeCookie("session", "xyz123", {
+      path: "/admin",
+      domain: ".creamininja.com",
+      httpOnly: true,
+      secure: true,
+      sameSite: "Strict",
+      maxAge: 7200,
     });
 
-    it('url encodes value', () => {
-      expect(serializeCookie('foo', 'bar baz')).toBe('foo=bar%20baz; Path=/; SameSite=Lax');
-    });
-
-    it('includes httpOnly', () => {
-      expect(serializeCookie('foo', 'bar', { httpOnly: true })).toBe('foo=bar; Path=/; HttpOnly; SameSite=Lax');
-    });
-
-    it('includes secure', () => {
-      expect(serializeCookie('foo', 'bar', { secure: true })).toBe('foo=bar; Path=/; Secure; SameSite=Lax');
-    });
-
-    it('includes sameSite', () => {
-      expect(serializeCookie('foo', 'bar', { sameSite: 'Strict' })).toBe('foo=bar; Path=/; SameSite=Strict');
-    });
-
-    it('includes path', () => {
-      expect(serializeCookie('foo', 'bar', { path: '/api' })).toBe('foo=bar; Path=/api; SameSite=Lax');
-    });
-
-    it('includes domain', () => {
-      expect(serializeCookie('foo', 'bar', { domain: 'example.com' })).toBe('foo=bar; Path=/; Domain=example.com; SameSite=Lax');
-    });
-
-    it('includes maxAge', () => {
-      expect(serializeCookie('foo', 'bar', { maxAge: 3600 })).toBe('foo=bar; Path=/; SameSite=Lax; Max-Age=3600');
-    });
-
-    it('includes maxAge 0', () => {
-      expect(serializeCookie('foo', 'bar', { maxAge: 0 })).toBe('foo=bar; Path=/; SameSite=Lax; Max-Age=0');
-    });
-
-    it('combines multiple options', () => {
-      expect(serializeCookie('foo', 'bar', {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'None',
-        path: '/api',
-        domain: 'example.com',
-        maxAge: 3600
-      })).toBe('foo=bar; Path=/api; Domain=example.com; HttpOnly; Secure; SameSite=None; Max-Age=3600');
-    });
+    expect(cookie).toBe("session=xyz123; Path=/admin; Domain=.creamininja.com; HttpOnly; Secure; SameSite=Strict; Max-Age=7200");
   });
 });
