@@ -166,7 +166,7 @@ export default function CreateRecipe() {
     setAiBusy(true);
     setErr(null);
     try {
-      const cat = category.trim() ? category : "Ice Cream";
+      const cat = category.trim() ? category : "";
 
       const res = await api<{ ok: true; recipe: AiRecipe }>("/ai/from-image", {
         method: "POST",
