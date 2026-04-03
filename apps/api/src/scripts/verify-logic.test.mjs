@@ -1,5 +1,4 @@
-// apps/api/src/scripts/verify-logic.test.mjs
-import assert from "node:assert";
+import { describe, it, expect } from "vitest";
 
 function buildUpdateQuery(updates, allowedColumns) {
   if (updates.length === 0) return null;
@@ -15,40 +14,44 @@ function buildUpdateQuery(updates, allowedColumns) {
   };
 }
 
-// Test cases for users.ts refactor
-const USER_ALLOWED = ["display_name", "avatar_key", "banner_key"];
-console.log("Testing users.ts refactor logic...");
+describe("verify-logic", () => {
+  const USER_ALLOWED = ["display_name", "avatar_key", "banner_key"];
 
-const userTest1 = buildUpdateQuery(
-  [{ col: "display_name", val: "New Name" }],
-  USER_ALLOWED
-);
-assert.strictEqual(userTest1.sql, "UPDATE table SET display_name = ?, updated_at = datetime('now') WHERE id = ?");
-assert.deepStrictEqual(userTest1.params, ["New Name", "some-id"]);
+  it("users.ts refactor logic 1", () => {
+    const userTest1 = buildUpdateQuery(
+      [{ col: "display_name", val: "New Name" }],
+      USER_ALLOWED
+    );
+    expect(userTest1.sql).toBe("UPDATE table SET display_name = ?, updated_at = datetime('now') WHERE id = ?");
+    expect(userTest1.params).toEqual(["New Name", "some-id"]);
+  });
 
-const userTest2 = buildUpdateQuery(
-  [
-    { col: "display_name", val: "New Name" },
-    { col: "avatar_key", val: "key123" }
-  ],
-  USER_ALLOWED
-);
-assert.strictEqual(userTest2.sql, "UPDATE table SET display_name = ?, avatar_key = ?, updated_at = datetime('now') WHERE id = ?");
-assert.deepStrictEqual(userTest2.params, ["New Name", "key123", "some-id"]);
+  it("users.ts refactor logic 2", () => {
+    const userTest2 = buildUpdateQuery(
+      [
+        { col: "display_name", val: "New Name" },
+        { col: "avatar_key", val: "key123" }
+      ],
+      USER_ALLOWED
+    );
+    expect(userTest2.sql).toBe("UPDATE table SET display_name = ?, avatar_key = ?, updated_at = datetime('now') WHERE id = ?");
+    expect(userTest2.params).toEqual(["New Name", "key123", "some-id"]);
+  });
 
-assert.throws(() => {
-  buildUpdateQuery([{ col: "malicious_col", val: "value" }], USER_ALLOWED);
-}, /Invalid column: malicious_col/);
+  it("users.ts refactor logic throws on malicious col", () => {
+    expect(() => {
+      buildUpdateQuery([{ col: "malicious_col", val: "value" }], USER_ALLOWED);
+    }).toThrow(/Invalid column: malicious_col/);
+  });
 
-// Test cases for recipes.ts refactor
-const RECIPE_ALLOWED = ["title", "description", "category", "visibility", "ingredients_json", "steps_json", "image_key"];
-console.log("Testing recipes.ts refactor logic...");
+  const RECIPE_ALLOWED = ["title", "description", "category", "visibility", "ingredients_json", "steps_json", "image_key"];
 
-const recipeTest1 = buildUpdateQuery(
-  [{ col: "title", val: "New Recipe" }, { col: "visibility", val: "public" }],
-  RECIPE_ALLOWED
-);
-assert.strictEqual(recipeTest1.sql, "UPDATE table SET title = ?, visibility = ?, updated_at = datetime('now') WHERE id = ?");
-assert.deepStrictEqual(recipeTest1.params, ["New Recipe", "public", "some-id"]);
-
-console.log("All logic tests passed!");
+  it("recipes.ts refactor logic", () => {
+    const recipeTest1 = buildUpdateQuery(
+      [{ col: "title", val: "New Recipe" }, { col: "visibility", val: "public" }],
+      RECIPE_ALLOWED
+    );
+    expect(recipeTest1.sql).toBe("UPDATE table SET title = ?, visibility = ?, updated_at = datetime('now') WHERE id = ?");
+    expect(recipeTest1.params).toEqual(["New Recipe", "public", "some-id"]);
+  });
+});
