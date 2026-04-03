@@ -251,43 +251,52 @@ router.patch("/:id", zValidator("json", RecipeUpdateSchema), async (c) => {
   if (current.author_id !== me.id) return c.json(forbidden(), 403);
 
   const body = c.req.valid("json");
-  const fields: string[] = [];
-  const params: any[] = [];
+  const updates: { col: string; val: unknown }[] = [];
 
   if (body.title !== undefined) {
-    fields.push("title = ?");
-    params.push(body.title);
+    updates.push({ col: "title", val: body.title });
   }
   if (body.description !== undefined) {
-    fields.push("description = ?");
-    params.push(body.description);
+    updates.push({ col: "description", val: body.description });
   }
   if (body.category !== undefined) {
-    fields.push("category = ?");
-    params.push(body.category);
+    updates.push({ col: "category", val: body.category });
   }
   if (body.visibility !== undefined) {
-    fields.push("visibility = ?");
-    params.push(body.visibility);
+    updates.push({ col: "visibility", val: body.visibility });
   }
   if (body.ingredients !== undefined) {
-    fields.push("ingredients_json = ?");
-    params.push(JSON.stringify(body.ingredients));
+    updates.push({ col: "ingredients_json", val: JSON.stringify(body.ingredients) });
   }
   if (body.steps !== undefined) {
-    fields.push("steps_json = ?");
-    params.push(JSON.stringify(body.steps));
+    updates.push({ col: "steps_json", val: JSON.stringify(body.steps) });
   }
   if (body.imageKey !== undefined) {
-    fields.push("image_key = ?");
-    params.push(body.imageKey);
+    updates.push({ col: "image_key", val: body.imageKey });
   }
 
-  if (!fields.length) return c.json(badRequest("No fields to update"), 400);
+  if (updates.length === 0) return c.json(badRequest("No fields to update"), 400);
 
-  fields.push("updated_at = datetime('now')");
+  const ALLOWED_COLUMNS = [
+    "title",
+    "description",
+    "category",
+    "visibility",
+    "ingredients_json",
+    "steps_json",
+    "image_key"
+  ];
+  const setClause = updates
+    .map((u) => {
+      if (!ALLOWED_COLUMNS.includes(u.col)) throw new Error("Invalid column");
+      return `${u.col} = ?`;
+    })
+    .join(", ");
 
-  await run(c.env, `UPDATE recipes SET ${fields.join(", ")} WHERE id = ?`, [...params, id]);
+  await run(c.env, `UPDATE recipes SET ${setClause}, updated_at = datetime('now') WHERE id = ?`, [
+    ...updates.map((u) => u.val),
+    id
+  ]);
 
   const base = recipeSelect(me.id);
   const row = await first<any>(c.env, `${base.sql} WHERE r.id = ?`, [...base.params, id]);
