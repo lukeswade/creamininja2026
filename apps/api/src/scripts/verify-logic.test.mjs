@@ -17,6 +17,7 @@ function buildUpdateQuery(updates, allowedColumns) {
 
 // Test cases for users.ts refactor
 const USER_ALLOWED = ["display_name", "avatar_key", "banner_key"];
+/* global console */
 console.log("Testing users.ts refactor logic...");
 
 const userTest1 = buildUpdateQuery(
@@ -52,3 +53,9 @@ assert.strictEqual(recipeTest1.sql, "UPDATE table SET title = ?, visibility = ?,
 assert.deepStrictEqual(recipeTest1.params, ["New Recipe", "public", "some-id"]);
 
 console.log("All logic tests passed!");
+
+import { test } from 'vitest';
+
+test('verify-logic tests complete', () => {
+  // The assertions run at module evaluation time
+});
