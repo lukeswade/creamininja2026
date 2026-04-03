@@ -10,7 +10,8 @@
     "db:seed:local": "wrangler d1 execute creamininja-db --local --file ./scripts/seed.sql",
     "db:seed:remote": "wrangler d1 execute creamininja-db --remote --file ./scripts/seed.sql",
     "lint": "eslint .",
-    "format": "prettier -w ."
+    "format": "prettier -w .",
+    "test": "vitest run src/util"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.4.1",
@@ -26,6 +27,7 @@
     "eslint": "^9.17.0",
     "prettier": "^3.4.2",
     "typescript": "^5.7.2",
+    "vitest": "^4.1.2",
     "wrangler": "^4.54.0"
   }
 }
