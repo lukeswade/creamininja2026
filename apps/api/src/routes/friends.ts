@@ -86,17 +86,15 @@ router.get("/search", async (c) => {
   );
   
   // Get friendship status for each user
-  const friendIds = new Set(
-    (await all<{ friend_id: string }>(c.env, "SELECT friend_id FROM friendships WHERE user_id = ?", [me.id])).map(r => r.friend_id)
-  );
-  
-  const pendingOutgoing = new Set(
-    (await all<{ to_user_id: string }>(c.env, "SELECT to_user_id FROM friend_requests WHERE from_user_id = ? AND status = 'pending'", [me.id])).map(r => r.to_user_id)
-  );
-  
-  const pendingIncoming = new Set(
-    (await all<{ from_user_id: string }>(c.env, "SELECT from_user_id FROM friend_requests WHERE to_user_id = ? AND status = 'pending'", [me.id])).map(r => r.from_user_id)
-  );
+  const [friendshipRows, pendingOutgoingRows, pendingIncomingRows] = await Promise.all([
+    all<{ friend_id: string }>(c.env, "SELECT friend_id FROM friendships WHERE user_id = ?", [me.id]),
+    all<{ to_user_id: string }>(c.env, "SELECT to_user_id FROM friend_requests WHERE from_user_id = ? AND status = 'pending'", [me.id]),
+    all<{ from_user_id: string }>(c.env, "SELECT from_user_id FROM friend_requests WHERE to_user_id = ? AND status = 'pending'", [me.id])
+  ]);
+
+  const friendIds = new Set(friendshipRows.map((r) => r.friend_id));
+  const pendingOutgoing = new Set(pendingOutgoingRows.map((r) => r.to_user_id));
+  const pendingIncoming = new Set(pendingIncomingRows.map((r) => r.from_user_id));
   
   const results = users.map(u => ({
     ...u,
