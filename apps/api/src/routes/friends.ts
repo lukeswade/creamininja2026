@@ -27,37 +27,38 @@ router.use("*", authOptional, requireAuth, requireCsrf);
 
 router.get("/", async (c) => {
   const me = c.get("user");
-  const friends = await all<{ id: string; displayName: string; handle: string; avatarKey: string | null }>(
-    c.env,
-    `SELECT u.id, u.display_name as displayName, u.handle, u.avatar_key as avatarKey
-     FROM friendships f
-     JOIN users u ON u.id = f.friend_id
-     WHERE f.user_id = ?
-     ORDER BY u.display_name COLLATE NOCASE`,
-    [me.id]
-  );
   
-  // Pending incoming requests
-  const pending = await all<{ id: string; requestId: string; displayName: string; handle: string; avatarKey: string | null }>(
-    c.env,
-    `SELECT u.id, fr.id as requestId, u.display_name as displayName, u.handle, u.avatar_key as avatarKey
-     FROM friend_requests fr
-     JOIN users u ON u.id = fr.from_user_id
-     WHERE fr.to_user_id = ? AND fr.status = 'pending'
-     ORDER BY fr.created_at DESC`,
-    [me.id]
-  );
-  
-  // Outgoing requests (sent by me, waiting for response)
-  const outgoing = await all<{ id: string; requestId: string; displayName: string; handle: string; avatarKey: string | null }>(
-    c.env,
-    `SELECT u.id, fr.id as requestId, u.display_name as displayName, u.handle, u.avatar_key as avatarKey
-     FROM friend_requests fr
-     JOIN users u ON u.id = fr.to_user_id
-     WHERE fr.from_user_id = ? AND fr.status = 'pending'
-     ORDER BY fr.created_at DESC`,
-    [me.id]
-  );
+  const [friends, pending, outgoing] = await Promise.all([
+    all<{ id: string; displayName: string; handle: string; avatarKey: string | null }>(
+      c.env,
+      `SELECT u.id, u.display_name as displayName, u.handle, u.avatar_key as avatarKey
+       FROM friendships f
+       JOIN users u ON u.id = f.friend_id
+       WHERE f.user_id = ?
+       ORDER BY u.display_name COLLATE NOCASE`,
+      [me.id]
+    ),
+    // Pending incoming requests
+    all<{ id: string; requestId: string; displayName: string; handle: string; avatarKey: string | null }>(
+      c.env,
+      `SELECT u.id, fr.id as requestId, u.display_name as displayName, u.handle, u.avatar_key as avatarKey
+       FROM friend_requests fr
+       JOIN users u ON u.id = fr.from_user_id
+       WHERE fr.to_user_id = ? AND fr.status = 'pending'
+       ORDER BY fr.created_at DESC`,
+      [me.id]
+    ),
+    // Outgoing requests (sent by me, waiting for response)
+    all<{ id: string; requestId: string; displayName: string; handle: string; avatarKey: string | null }>(
+      c.env,
+      `SELECT u.id, fr.id as requestId, u.display_name as displayName, u.handle, u.avatar_key as avatarKey
+       FROM friend_requests fr
+       JOIN users u ON u.id = fr.to_user_id
+       WHERE fr.from_user_id = ? AND fr.status = 'pending'
+       ORDER BY fr.created_at DESC`,
+      [me.id]
+    )
+  ]);
   
   return c.json(jsonOk({ ok: true, friends, pending, outgoing }));
 });
