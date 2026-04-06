@@ -87,6 +87,8 @@ router.get("/network", authOptional, async (c) => {
          ))
      )
      AND r.created_at >= ${dt}
+     AND r.ingredients_json IS NOT NULL AND r.ingredients_json != '[]' AND r.ingredients_json != ''
+     AND r.steps_json IS NOT NULL AND r.steps_json != '[]' AND r.steps_json != ''
      ${extraWhere}
      ${orderBy}
      LIMIT 50`,
@@ -142,6 +144,8 @@ router.get("/popular", authOptional, async (c) => {
     `${base.sql}
      WHERE ${visibilityWhere}
        AND r.created_at >= ${dt}
+       AND r.ingredients_json IS NOT NULL AND r.ingredients_json != '[]' AND r.ingredients_json != ''
+       AND r.steps_json IS NOT NULL AND r.steps_json != '[]' AND r.steps_json != ''
        ${extraWhere}
      ${orderBy}
      LIMIT 50`,
