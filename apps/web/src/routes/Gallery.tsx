@@ -272,6 +272,22 @@ function GalleryItem({ r, onMutate }: { r: RecipeSummary; onMutate?: () => void 
       <div className="absolute inset-0 flex flex-col justify-end p-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
         <h3 className="text-sm font-semibold text-white line-clamp-2">{r.title}</h3>
         <p className="mt-0.5 text-xs text-slate-300">@{r.author.handle}</p>
+
+        {/* Ingredients & Steps preview */}
+        {(r.ingredients || r.steps) && (
+          <div className="mt-2 hidden sm:block">
+            {r.ingredients && r.ingredients.length > 0 && (
+              <p className="text-[10px] text-slate-400 line-clamp-1">
+                <span className="font-semibold text-slate-300">Ing:</span> {r.ingredients.join(", ")}
+              </p>
+            )}
+            {r.steps && r.steps.length > 0 && (
+              <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
+                <span className="font-semibold text-slate-300">Prep:</span> {r.steps.join(" ")}
+              </p>
+            )}
+          </div>
+        )}
       </div>
       
       {/* Star button - always visible */}

@@ -1,4 +1,5 @@
 // apps/api/src/scripts/verify-logic.test.mjs
+/* global console */
 import assert from "node:assert";
 import { test } from "vitest";
 
