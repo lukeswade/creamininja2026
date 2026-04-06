@@ -87,8 +87,8 @@ router.get("/network", authOptional, async (c) => {
          ))
      )
      AND r.created_at >= ${dt}
-     AND r.ingredients_json IS NOT NULL AND r.ingredients_json != '[]' AND r.ingredients_json != ''
-     AND r.steps_json IS NOT NULL AND r.steps_json != '[]' AND r.steps_json != ''
+     AND json_valid(r.ingredients_json) = 1 AND json_array_length(r.ingredients_json) > 0
+     AND json_valid(r.steps_json) = 1 AND json_array_length(r.steps_json) > 0
      ${extraWhere}
      ${orderBy}
      LIMIT 50`,
@@ -144,8 +144,8 @@ router.get("/popular", authOptional, async (c) => {
     `${base.sql}
      WHERE ${visibilityWhere}
        AND r.created_at >= ${dt}
-       AND r.ingredients_json IS NOT NULL AND r.ingredients_json != '[]' AND r.ingredients_json != ''
-       AND r.steps_json IS NOT NULL AND r.steps_json != '[]' AND r.steps_json != ''
+       AND json_valid(r.ingredients_json) = 1 AND json_array_length(r.ingredients_json) > 0
+       AND json_valid(r.steps_json) = 1 AND json_array_length(r.steps_json) > 0
        ${extraWhere}
      ${orderBy}
      LIMIT 50`,
