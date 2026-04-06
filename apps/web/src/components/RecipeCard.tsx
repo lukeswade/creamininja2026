@@ -12,6 +12,8 @@ export type RecipeSummary = {
   description?: string | null;
   category: string;
   visibility: "private" | "restricted" | "public";
+  ingredients?: string[];
+  steps?: string[];
   imageKey?: string | null;
   starsCount: number;
   viewerStarred?: boolean;
@@ -129,6 +131,32 @@ export function RecipeCard({ r, onMutate }: { r: RecipeSummary; onMutate?: () =>
             {/* Description */}
             {r.description && (
               <p className="mt-2 text-sm text-slate-400 line-clamp-2">{r.description}</p>
+            )}
+
+            {/* Recipe Details Preview */}
+            {(r.ingredients || r.steps) && (
+              <div className="mt-3 grid grid-cols-2 gap-4 border-t border-slate-800/50 pt-3">
+                {r.ingredients && r.ingredients.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-semibold text-slate-300 mb-1">Ingredients</h4>
+                    <ul className="list-inside list-disc text-xs text-slate-400 space-y-0.5 line-clamp-2">
+                      {r.ingredients.map((ing, i) => (
+                        <li key={i} className="truncate">{ing}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {r.steps && r.steps.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-semibold text-slate-300 mb-1">Instructions</h4>
+                    <ul className="list-inside list-decimal text-xs text-slate-400 space-y-0.5 line-clamp-2">
+                      {r.steps.map((step, i) => (
+                        <li key={i} className="truncate">{step}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 

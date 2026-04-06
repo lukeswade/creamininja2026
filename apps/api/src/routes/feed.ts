@@ -13,6 +13,7 @@ function recipeSelect(viewerId: string | null): { sql: string; params: any[] } {
       sql: `
         SELECT
           r.id, r.title, r.description, r.category, r.visibility,
+          r.ingredients_json as ingredientsJson, r.steps_json as stepsJson,
           r.image_key as imageKey,
           r.stars_count as starsCount,
           r.created_at as createdAt,
@@ -33,6 +34,7 @@ function recipeSelect(viewerId: string | null): { sql: string; params: any[] } {
     sql: `
       SELECT
         r.id, r.title, r.description, r.category, r.visibility,
+        r.ingredients_json as ingredientsJson, r.steps_json as stepsJson,
         r.image_key as imageKey,
         r.stars_count as starsCount,
         r.created_at as createdAt,
@@ -172,6 +174,8 @@ function normalize(row: any) {
     description: row.description,
     category: row.category,
     visibility: row.visibility,
+    ingredients: safeParseJsonArray(row.ingredientsJson ?? "[]"),
+    steps: safeParseJsonArray(row.stepsJson ?? "[]"),
     imageKey: row.imageKey,
     starsCount: row.starsCount,
     viewerStarred: !!row.viewerStarred,
@@ -183,6 +187,15 @@ function normalize(row: any) {
       avatarKey: row.authorAvatarKey
     }
   };
+}
+
+function safeParseJsonArray(s: string) {
+  try {
+    const v = JSON.parse(s);
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
 }
 
 export default router;
